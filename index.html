@@ -42,7 +42,16 @@
             cursor: grab;
             touch-action: none;
             user-select: none;
-            transition: box-shadow 0.2s ease;
+            /* Transizione fluida per il cambio z-index o piccoli movimenti */
+            transition: box-shadow 0.2s ease, transform 0.05s linear;
+        }
+
+        /* Feedback visivo solo per gli elementi che hanno un link */
+        .draggable-item[data-url] {
+            border: 1px solid transparent;
+        }
+        .draggable-item[data-url]:hover {
+            border-color: #3d0bd2ef;
         }
 
         .draggable-item:active {
@@ -53,19 +62,8 @@
             display: block;
             width: 100%;
             height: auto;
-            pointer-events: none; /* Impedisce il drag nativo dell'immagine */
+            pointer-events: none; 
             -webkit-user-drag: none;
-        }
-
-        /* Impedisce il click sul link se l'elemento ha la classe .is-dragging */
-        .is-dragging a {
-            pointer-events: none;
-            cursor: grabbing;
-        }
-
-        .draggable-item a {
-            text-decoration: none;
-            display: block;
         }
     </style>
 </head>
@@ -77,28 +75,16 @@
     </header>
 
     <main class="sandbox-container">
-        <div class="draggable-item" style="top: 250px; left: 50px;">
-            <a href="es2/index.html">
-                <img src="img/skullpng.webp" alt="k.">
-            </a>
+        
+        <div class="draggable-item" style="top: 250px; left: 50px;" data-url="es2/index.html">
+            <img src="img/skullpng.webp" alt="Skull">
         </div>
         
-        <div class="draggable-item" style="top: 300px; left: 400px;">
-             <a href="index.html">
-                <img src="img/cpuimg.png" alt="p.">
-           </a>
+        <div class="draggable-item" style="top: 300px; left: 400px;" data-url="index.html">
+            <img src="img/cpuimg.png" alt="CPU">
         </div>
 
-        <div class="draggable-item" style="top: 600px; left: 200px;">
-            <img src="https://picsum.photos/400/250?random=1" alt="Lavoro 3">
-        </div>
-        <div class="draggable-item" style="top: 500px; left: 250px;">
-            <img src="https://picsum.photos/400/250?random=2" alt="Lavoro 4">
-        </div>
-        <div class="draggable-item" style="top: 350px; left: 75px;">
-            <img src="https://picsum.photos/400/250?random=3" alt="Lavoro 5">
-        </div>
-    </main>
+        </main>
 
     <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
 
@@ -113,40 +99,40 @@
               })
             ],
             listeners: {
-              start(event) {
-                // Appena inizia il movimento, aggiungiamo la classe che disattiva i link
-                event.target.classList.add('is-dragging');
-              },
               move(event) {
                 var target = event.target;
-                // Recupero coordinate attuali o imposto a 0
                 var x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
                 var y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
 
-                // Applico la trasformazione
                 target.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
-
-                // Salvo le nuove coordinate
                 target.setAttribute('data-x', x);
                 target.setAttribute('data-y', y);
-              },
-              end(event) {
-                // Rimuovo la classe is-dragging con un leggero ritardo
-                // Questo evita che il rilascio del mouse venga letto come click sul link
-                setTimeout(() => {
-                  event.target.classList.remove('is-dragging');
-                }, 100);
               }
             }
           })
           .on('down', function (event) {
-              // Gestione z-index: porta in primo piano l'elemento cliccato
+              // Porta l'elemento selezionato sopra tutti gli altri
               var items = document.querySelectorAll('.draggable-item');
               items.forEach(el => el.style.zIndex = 1);
-              
-              // Usiamo currentTarget per assicurarci di colpire il div .draggable-item
               event.currentTarget.style.zIndex = 10;
+          })
+          .on('doubletap', function (event) {
+              // Gestione doppio click (ottimizzato per mouse e touch)
+              var url = event.currentTarget.getAttribute('data-url');
+              if (url) {
+                  window.location.href = url;
+              }
           });
+
+        // Backup per browser che potrebbero non intercettare il doubletap di interact
+        document.querySelectorAll('.draggable-item').forEach(item => {
+            item.addEventListener('dblclick', function() {
+                var url = this.getAttribute('data-url');
+                if (url) {
+                    window.location.href = url;
+                }
+            });
+        });
     </script>
 </body>
 </html>

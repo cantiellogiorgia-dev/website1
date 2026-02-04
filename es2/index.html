@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body { 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            background: #f4f4f4; 
+            overflow: hidden;
+        }
+        canvas { 
+            display: block;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+<script>
+let kSnow = [];
+let numK = 40;
+
+// Variabili timer e stati trifoglio
+let lastMouseX = 0, lastMouseY = 0;
+let idleTimer = 0;
+let cloverState = "hidden"; 
+let cloverAlpha = 0;
+let cloverTimer = 0;
+
+function setup() {
+    createCanvas(400, 400);
+    textFont('Helvetica');
+    textStyle(BOLD);
+    for (let i = 0; i < numK; i++) {
+        kSnow.push(createK());
+    }
+}
+
+function draw() {
+    background(244);
+    noStroke();
+
+    // 1. GESTIONE LOGICA TRIFOGLIO
+    let mouseDist = dist(mouseX, mouseY, lastMouseX, lastMouseY);
+    
+    if (cloverState === "hidden") {
+        if (mouseDist < 1) {
+            idleTimer++;
+            if (idleTimer > 240) { // 4 secondi
+                cloverState = "showing";
+                cloverAlpha = 255;
+                cloverTimer = 120; // 2 secondi inseguimento
+            }
+        } else {
+            idleTimer = 0;
+        }
+    } else if (cloverState === "showing") {
+        cloverTimer--;
+        if (cloverTimer <= 0) cloverState = "fading";
+    } else if (cloverState === "fading") {
+        cloverAlpha -= 5; 
+        if (cloverAlpha <= 0) {
+            cloverAlpha = 0;
+            cloverState = "hidden";
+            idleTimer = 0;
+        }
+    }
+
+    lastMouseX = mouseX;
+    lastMouseY = mouseY;
+
+    // 2. DISEGNO PIOGGIA DI K
+    for (let k of kSnow) {
+        let d = dist(mouseX, mouseY, k.x, k.y);
+        if (d < 70) {
+            let force = map(d, 0, 70, 12, 0);
+            if (mouseX > k.x) k.x -= force * 0.5;
+            else k.x += force * 0.5;
+        }
+
+        let kAlpha = map(k.size, 10, 45, 80, 255);
+        fill(0, kAlpha);
+        textSize(k.size);
+        let xOffset = sin(k.drift) * 8;
+        text('K', k.x + xOffset, k.y);
+
+        k.y += k.speed;
+        k.drift += k.driftSpeed;
+
+        if (k.y > height + 50) {
+            Object.assign(k, createK());
+            k.y = -50;
+        }
+    }
+
+    // 3. DISEGNO TRIFOGLIO MODIFICATO
+    if (cloverState !== "hidden") {
+        drawClover(mouseX, mouseY, cloverAlpha);
+    }
+}
+
+function drawClover(x, y, opacity) {
+    push();
+    translate(x, y);
+    rotate(sin(frameCount * 0.05) * 0.1);
+    
+    fill(0, opacity); 
+    noStroke();
+    
+    // Foglie rimpicciolite e circolari
+    for (let i = 0; i < 3; i++) {
+        push();
+        rotate(radians(i * 120));
+        // Dimensioni ridotte a 7x6 per un effetto più delicato
+        ellipse(0, -4, 7, 6);
+        pop();
+    }
+    
+    // Gambo allungato e sottile
+    stroke(0, opacity);
+    strokeWeight(0.8); 
+    noFill();
+    // Aumento della lunghezza della curva Bezier (da 10 a 22 pixel)
+    bezier(0, 0, 0, 10, 5, 18, 8, 22);
+    pop();
+}
+
+function createK() {
+    let size = random(10, 45);
+    return {
+        x: random(0, width),
+        y: random(-height, 0),
+        size: size,
+        speed: map(size, 10, 45, 0.5, 1.2),
+        drift: random(0, TWO_PI),
+        driftSpeed: random(0.01, 0.03)
+    };
+}
+</script>
+
+</body>
+</html>

@@ -1,36 +1,113 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>myhomepage</title>
-     <style>
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            background-color: #afafafeb;
-            display: flex;
-            justify-content: (355,250);
-            align-items: (355,250);
-            height: 100vh;
-            margin: 0;
-        }
-        img{
-            width: 100px;
-            height: 100px;
-            left: 500px;
-    right: 500px;
-    align-items: center
-        }
-    </style>
+    <title>Portfolio Personale</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
-    
 <body>
-<h1>PORTFOLIO</h1>
-<p><br>Giorgia<br>Cantiello<br></p>
 
-<p><br>seseguituttoquanteleistruzioniimpareraianonpensarepiù:))<br></p> 
-<img src="img/orsoimg.jpg">
-</body> 
+    <header>
+        <h1>PORTFOLIO</h1>
+        <p class="name">Nome Cognome</p>
+    </header>
+
+    <main class="sandbox-container">
+        <div class="draggable-item" style="top: 100px; left: 50px;">
+            <img src="https://via.placeholder.com/300x200" alt="Progetto 1">
+        </div>
+        
+        <div class="draggable-item" style="top: 150px; left: 400px;">
+            <img src="https://via.placeholder.com/250x350" alt="Progetto 2">
+        </div>
+
+        <div class="draggable-item" style="top: 400px; left: 200px;">
+            <img src="https://via.placeholder.com/400x250" alt="Progetto 3">
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+    <script src="script.js"></script>
+</body>
 </html>
+
+/* Reset base */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Helvetica', sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.2;
+}
+
+header {
+    padding: 40px;
+    position: fixed; /* Resta fisso mentre scorri */
+    top: 0;
+    left: 0;
+    z-index: 100;
+    pointer-events: none; /* Permette di cliccare sotto l'header */
+}
+
+h1 { font-size: 1rem; font-weight: 300; letter-spacing: 2px; }
+.name { font-size: 2rem; font-weight: bold; text-transform: uppercase; }
+
+/* Contenitore principale */
+.sandbox-container {
+    min-height: 200vh; /* Pagina molto lunga per lo scrolling */
+    position: relative;
+    padding-top: 200px;
+}
+
+/* Riquadri delle immagini */
+.draggable-item {
+    position: absolute;
+    width: auto;
+    background: white;
+    padding: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    cursor: grab;
+    touch-action: none; /* Necessario per interact.js */
+    transition: transform 0.1s;
+}
+
+.draggable-item:active { cursor: grabbing; z-index: 1000; }
+
+.draggable-item img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    pointer-events: none; /* Evita che il browser provi a trascinare l'immagine come file */
+}
+// Inizializza la funzione trascinamento
+interact('.draggable-item')
+  .draggable({
+    // Abilita l'inerzia per un movimento fluido
+    inertia: true,
+    modifiers: [
+      interact.modifiers.restrictRect({
+        restriction: 'parent', // Non esce dal contenitore principale
+        endOnly: true
+      })
+    ],
+    listeners: {
+      move: dragMoveListener,
+    }
+  });
+
+function dragMoveListener(event) {
+  var target = event.target;
+  // Mantieni le coordinate nelle variabili data-x e data-y
+  var x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+  var y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+
+  // Applica la trasformazione visiva
+  target.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+
+  // Aggiorna gli attributi di posizione
+  target.setAttribute('data-x', x);
+  target.setAttribute('data-y', y);
+}
 

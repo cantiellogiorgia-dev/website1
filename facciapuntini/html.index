@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body { 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            background: #111; 
+        }
+        canvas {
+            max-width: 90vw;
+            max-height: 90vh;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+
+<script>
+let img;
+let puntoDim = 2; 
+let spaziatura = 2; 
+
+function preload() {
+    /* CORREZIONE PERCORSO:
+       '../' serve per uscire dalla cartella 'progetto2' e tornare in 'sitoweb1'.
+       Poi entriamo in 'img' per prendere il file.
+    */
+    img = loadImage('../img/ritrattocopia.png'); 
+}
+
+function setup() {
+    // Se l'immagine è molto grande, p5 la caricherà con le sue dimensioni originali
+    createCanvas(img.width, img.height);
+    noLoop(); 
+}
+
+function draw() {
+    background(0); 
+    img.loadPixels();
+
+    // Ciclo per creare la griglia di punti
+    for (let y = 0; y < img.height; y += (puntoDim + spaziatura)) {
+        for (let x = 0; x < img.width; x += (puntoDim + spaziatura)) {
+            
+            let pixColor = img.get(x, y);
+            
+            // FILTRO BLU:
+            // Prendiamo la luminosità media del pixel originale e la applichiamo solo al blu
+            // per un effetto monocromatico blu più intenso
+            let avg = (red(pixColor) + green(pixColor) + blue(pixColor)) / 3;
+            
+            let r = 0; 
+            let g = 0; 
+            let b = avg; // Usiamo la media per dare profondità al blu
+            let a = alpha(pixColor); 
+
+            if (a > 0) {
+                fill(r, g, b, a);
+                noStroke();
+                rect(x, y, puntoDim, puntoDim);
+            }
+        }
+    }
+}
+</script>
+
+</body>
+</html>

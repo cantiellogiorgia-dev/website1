@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body { 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            background: #f0f0f0; 
+        }
+        /* Il container del canvas */
+        #canvas-container {
+            width: 600px;
+            height: 300px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<script>
+let shapes = [];
+
+function setup() {
+    // Creiamo il canvas dentro il container specifico
+    let canvas = createCanvas(600, 300);
+    canvas.parent('canvas-container');
+}
+
+function draw() {
+    background(255); // Sfondo bianco del frame
+
+    // Se il mouse è dentro il frame, aggiungi nuove forme
+    if (mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
+        if (mouseIsPressed || mouseMoved) {
+            shapes.push(new Shape(mouseX, mouseY));
+        }
+    }
+
+    // Ciclo inverso per disegnare e rimuovere le forme sbiadite
+    for (let i = shapes.length - 1; i >= 0; i--) {
+        shapes[i].update();
+        shapes[i].display();
+        
+        if (shapes[i].isDead()) {
+            shapes.splice(i, 1);
+        }
+    }
+}
+
+// Definiamo la forma (cerchio o rettangolo arrotondato)
+class Shape {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.size = random(20, 60);
+        this.alpha = 255; // Partenza: opaco
+        this.fadeSpeed = random(2, 5); // Velocità di sbiadimento
+        this.gray = random(50, 200); // Shades di grigio
+        this.isCircle = random() > 0.5; // Scelta casuale della forma
+        this.roundness = random(5, 20); // Arrotondamento per i rettangoli
+    }
+
+    update() {
+        this.alpha -= this.fadeSpeed; // Sbiadimento
+    }
+
+    display() {
+        noStroke();
+        fill(this.gray, this.alpha);
+        
+        if (this.isCircle) {
+            ellipse(this.x, this.y, this.size);
+        } else {
+            rectMode(CENTER);
+            rect(this.x, this.y, this.size, this.size, this.roundness);
+        }
+    }
+
+    isDead() {
+        return this.alpha <= 0;
+    }
+}
+
+// Funzione necessaria per p5js per rilevare il movimento
+function mouseMoved() {
+    return true;
+}
+</script>
+
+</body>
+</html>

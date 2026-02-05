@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Anatomy & Heart Simulation - Fixed</title>
+    <title>Anatomy & Decapitation Simulation</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <style>
         body { margin: 0; padding: 0; background-color: #050505; overflow: hidden; }
@@ -14,10 +14,18 @@
 <script>
 let bloodParticles = [];
 let heartPulse = 0;
-let skeletonASCII = [
+let headDropped = false;
+let headY = -180;
+let headX = 0;
+let headRotation = 0;
+
+// Lo scheletro diviso per separare la testa dal corpo
+let headASCII = [
     "      .-.      ",
     "     (o.o)     ",
-    "      |=|      ",
+    "      |=|      "
+];
+let bodyASCII = [
     "     __|__     ",
     "   //  |  \\\\   ",
     "  //   |   \\\\  ",
@@ -29,9 +37,7 @@ let skeletonASCII = [
     "    \\_    _/   "
 ];
 
-// Coordinate mappate per seguire lo scheletro ASCII
 let paths = {
-    head:  [{x: 0, y: -90}, {x: 0, y: -180}, {x: 0, y: -90}],
     armL:  [{x: 0, y: -90}, {x: -80, y: -50}, {x: -120, y: 20}, {x: -80, y: -50}, {x: 0, y: -90}],
     armR:  [{x: 0, y: -90}, {x: 80, y: -50}, {x: 120, y: 20}, {x: 80, y: -50}, {x: 0, y: -90}],
     legL:  [{x: 0, y: 50}, {x: -40, y: 150}, {x: -50, y: 220}, {x: -40, y: 150}, {x: 0, y: 50}],
@@ -40,8 +46,7 @@ let paths = {
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
-    // Creiamo 100 particelle di sangue "H"
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 150; i++) {
         bloodParticles.push(new BloodH());
     }
 }
@@ -50,26 +55,48 @@ function draw() {
     background(5);
     translate(width / 2, height / 2);
 
-    // 1. DISEGNO DELLO SCHELETRO ASCII
+    // 1. DISEGNO DEL CORPO
     fill(150); 
     textAlign(CENTER, CENTER);
     textSize(24);
     textFont('monospace');
-    for (let i = 0; i < skeletonASCII.length; i++) {
-        text(skeletonASCII[i], 0, -180 + i * 35);
+    for (let i = 0; i < bodyASCII.length; i++) {
+        text(bodyASCII[i], 0, -75 + i * 35);
     }
 
-    // 2. CUORE PULSANTE
+    // 2. DISEGNO DELLA TESTA (Con fisica se cade)
+    push();
+    if (headDropped) {
+        headY += 5; // Cade verso il basso
+        headX += 1; // Un po' di deriva laterale
+        headRotation += 0.05;
+        if (headY > height/2) headY = height/2; // Si ferma al bordo
+    }
+    translate(headX, headY);
+    rotate(headRotation);
+    for (let i = 0; i < headASCII.length; i++) {
+        text(headASCII[i], 0, i * 35);
+    }
+    pop();
+
+    // 3. CUORE PULSANTE
     heartPulse = sin(frameCount * 0.1) * 5;
     fill(255, 0, 0);
     noStroke();
-    // Posizionato al centro del petto dello scheletro
     ellipse(0, -60, 20 + heartPulse, 20 + heartPulse);
 
-    // 3. MOVIMENTO DELLE H (SANGUE)
+    // 4. MOVIMENTO DELLE H (SANGUE)
     for (let h of bloodParticles) {
         h.update();
         h.display();
+    }
+}
+
+function doubleClicked() {
+    // Se clicchi due volte vicino al cuore (cerchio rosso)
+    let d = dist(mouseX - width/2, mouseY - height/2, 0, -60);
+    if (d < 30) {
+        headDropped = true;
     }
 }
 
@@ -79,36 +106,53 @@ class BloodH {
     }
 
     init() {
-        let pathKeys = Object.keys(paths);
-        this.currentPath = paths[random(pathKeys)];
-        this.targetIdx = 1;
-        // Parte dalla prima coordinata del percorso scelto
-        this.pos = createVector(this.currentPath[0].x, this.currentPath[0].y);
-        this.speed = random(1, 3);
+        this.fountainMode = headDropped;
+        if (!this.fountainMode) {
+            // Modalità Normale: segue i vasi sanguigni
+            let pathKeys = Object.keys(paths);
+            this.currentPath = paths[random(pathKeys)];
+            this.targetIdx = 1;
+            this.pos = createVector(0, -60);
+            this.speed = random(1, 3);
+        } else {
+            // Modalità Fontanella: spruzza dal collo
+            this.pos = createVector(0, -90); // Posizione del collo
+            this.vel = createVector(random(-3, 3), random(-8, -2)); // Spruzzo verso l'alto
+            this.acc = createVector(0, 0.2); // Gravità
+            this.life = 255;
+        }
     }
 
     update() {
-        let target = this.currentPath[this.targetIdx];
-        let targetVec = createVector(target.x, target.y);
-        
-        // Calcola direzione verso il prossimo punto del percorso
-        let dir = p5.Vector.sub(targetVec, this.pos);
-        
-        if (dir.mag() < 5) {
-            this.targetIdx++;
-            if (this.targetIdx >= this.currentPath.length) {
-                this.init(); // Ricomincia il ciclo dal cuore
+        if (!headDropped) {
+            let target = this.currentPath[this.targetIdx];
+            let targetVec = createVector(target.x, target.y);
+            let dir = p5.Vector.sub(targetVec, this.pos);
+            
+            if (dir.mag() < 5) {
+                this.targetIdx++;
+                if (this.targetIdx >= this.currentPath.length) this.init();
             }
+            dir.setMag(this.speed);
+            this.pos.add(dir);
+        } else {
+            // Fisica dello spruzzo
+            if (!this.vel) this.init(); // Reset se è appena cambiata la modalità
+            this.vel.add(this.acc);
+            this.pos.add(this.vel);
+            this.life -= 2;
+            if (this.life < 0 || this.pos.y > height/2) this.init();
         }
-        
-        dir.setMag(this.speed);
-        this.pos.add(dir);
     }
 
     display() {
-        fill(255, 50, 50);
+        if (headDropped) {
+            fill(200, 0, 0, this.life); // Più scuro e trasparente man mano che muore
+        } else {
+            fill(255, 50, 50);
+        }
         noStroke();
-        textSize(14);
+        textSize(headDropped ? 18 : 14);
         text("H", this.pos.x, this.pos.y);
     }
 }

@@ -2,81 +2,121 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Castle Escape - Fixed</title>
+    <title>Anatomy & Heart Simulation - Fixed</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <style>
-        body { 
-            margin: 0; 
-            padding: 0; 
-            background-color: #f0f0f0; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            overflow: hidden;
-            font-family: 'Helvetica', sans-serif;
-        }
-        canvas { 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            border: 2px solid #999;
-        }
+        body { margin: 0; padding: 0; background-color: #050505; overflow: hidden; }
+        canvas { display: block; }
     </style>
 </head>
 <body>
 
 <script>
-let mario;
-let blocks = [];
-let score = 0;
-let lavaSpeed = 2.5;
-let timerDiff = 0;
-let lastJump = 0;
-let state = "START"; 
+let bloodParticles = [];
+let heartPulse = 0;
+let skeletonASCII = [
+    "      .-.      ",
+    "     (o.o)     ",
+    "      |=|      ",
+    "     __|__     ",
+    "   //  |  \\\\   ",
+    "  //   |   \\\\  ",
+    "  \\\\__/|\\__//  ",
+    "       |       ",
+    "      _|_      ",
+    "     /   \\     ",
+    "    /     \\    ",
+    "    \\_    _/   "
+];
+
+// Coordinate mappate per seguire lo scheletro ASCII
+let paths = {
+    head:  [{x: 0, y: -90}, {x: 0, y: -180}, {x: 0, y: -90}],
+    armL:  [{x: 0, y: -90}, {x: -80, y: -50}, {x: -120, y: 20}, {x: -80, y: -50}, {x: 0, y: -90}],
+    armR:  [{x: 0, y: -90}, {x: 80, y: -50}, {x: 120, y: 20}, {x: 80, y: -50}, {x: 0, y: -90}],
+    legL:  [{x: 0, y: 50}, {x: -40, y: 150}, {x: -50, y: 220}, {x: -40, y: 150}, {x: 0, y: 50}],
+    legR:  [{x: 0, y: 50}, {x: 40, y: 150}, {x: 50, y: 220}, {x: 40, y: 150}, {x: 0, y: 50}]
+};
 
 function setup() {
-    createCanvas(400, 600);
-    mario = new Mario();
+    createCanvas(windowWidth, windowHeight);
+    // Creiamo 100 particelle di sangue "H"
+    for (let i = 0; i < 100; i++) {
+        bloodParticles.push(new BloodH());
+    }
 }
 
 function draw() {
-    background(220); // Grigio uniforme
+    background(5);
+    translate(width / 2, height / 2);
 
-    if (state === "START") {
-        drawMenu();
-    } else if (state === "PLAY") {
-        runGame();
-    } else if (state === "END") {
-        drawEnd();
+    // 1. DISEGNO DELLO SCHELETRO ASCII
+    fill(150); 
+    textAlign(CENTER, CENTER);
+    textSize(24);
+    textFont('monospace');
+    for (let i = 0; i < skeletonASCII.length; i++) {
+        text(skeletonASCII[i], 0, -180 + i * 35);
     }
-}
 
-function drawMenu() {
-    textAlign(CENTER);
-    fill(50);
-    textSize(32);
-    textStyle(BOLD);
-    text("CASTLE ESCAPE", width/2, height/2 - 60);
-    
-    fill(0, 120, 215);
-    rectMode(CENTER);
-    rect(width/2, height/2, 160, 55, 10);
-    
-    fill(255);
+    // 2. CUORE PULSANTE
+    heartPulse = sin(frameCount * 0.1) * 5;
+    fill(255, 0, 0);
     noStroke();
-    textSize(20);
-    text("START", width/2, height/2 + 7);
-    
-    fill(100);
-    textStyle(NORMAL);
-    textSize(14);
-    text("Frecce: Muovi | Mouse: Salta", width/2, height/2 + 100);
+    // Posizionato al centro del petto dello scheletro
+    ellipse(0, -60, 20 + heartPulse, 20 + heartPulse);
+
+    // 3. MOVIMENTO DELLE H (SANGUE)
+    for (let h of bloodParticles) {
+        h.update();
+        h.display();
+    }
 }
 
-function runGame() {
-    if (millis() - timerDiff > 10000) {
-        lavaSpeed += 0.5;
-        timerDiff = millis();
+class BloodH {
+    constructor() {
+        this.init();
     }
 
-    // Movimento orizzontale
-    if (keyIsDown(LEFT)
+    init() {
+        let pathKeys = Object.keys(paths);
+        this.currentPath = paths[random(pathKeys)];
+        this.targetIdx = 1;
+        // Parte dalla prima coordinata del percorso scelto
+        this.pos = createVector(this.currentPath[0].x, this.currentPath[0].y);
+        this.speed = random(1, 3);
+    }
+
+    update() {
+        let target = this.currentPath[this.targetIdx];
+        let targetVec = createVector(target.x, target.y);
+        
+        // Calcola direzione verso il prossimo punto del percorso
+        let dir = p5.Vector.sub(targetVec, this.pos);
+        
+        if (dir.mag() < 5) {
+            this.targetIdx++;
+            if (this.targetIdx >= this.currentPath.length) {
+                this.init(); // Ricomincia il ciclo dal cuore
+            }
+        }
+        
+        dir.setMag(this.speed);
+        this.pos.add(dir);
+    }
+
+    display() {
+        fill(255, 50, 50);
+        noStroke();
+        textSize(14);
+        text("H", this.pos.x, this.pos.y);
+    }
+}
+
+function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+}
+</script>
+
+</body>
+</html>

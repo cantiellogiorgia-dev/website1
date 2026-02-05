@@ -2,29 +2,25 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Spirale Rosso Fuoco</title>
+    <title>Abissi Fluidi - Follower Swarm</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <style>
-        body { 
-            margin: 0; 
-            padding: 0;
-            background: #050505; 
-            overflow: hidden; 
-        }
-        canvas {
-            display: block;
-            cursor: none; 
-        }
+        body { margin: 0; background: #050202; overflow: hidden; }
+        canvas { display: block; cursor: crosshair; }
     </style>
 </head>
 <body>
 
 <script>
-let circles = [];
+let spores = [];
+let deepFish = [];
 let angle = 0;
+let startTime;
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
+    colorMode(RGB, 255, 255, 255, 255);
+    startTime = millis();
 }
 
 function windowResized() {
@@ -32,89 +28,228 @@ function windowResized() {
 }
 
 function draw() {
-    // Scia con una punta di rosso scuro nello sfondo (15, 5, 5)
-    background(15, 5, 5, 20); 
+    background(5, 2, 2, 60); 
 
-    // Centro di fallback se il mouse non è ancora entrato
-    let targetX = (mouseX <= 0) ? width / 2 : mouseX;
-    let targetY = (mouseY <= 0) ? height / 2 : mouseY;
-
-    for (let i = 0; i < 2; i++) {
-        let r = angle * 1.5; 
-        
-        // Spirale 1: Grigio/Argento
-        circles.push(new PsyCircle(
-            targetX + cos(angle) * r, 
-            targetY + sin(angle) * r, 
-            angle, 
-            false
-        ));
-        
-        // Spirale 2: ROSSO (Sostituito al Blu)
-        circles.push(new PsyCircle(
-            targetX + cos(angle + PI) * r, 
-            targetY + sin(angle + PI) * r, 
-            angle + PI, 
-            true
-        ));
-        
-        angle += 0.07; 
-    }
-
-    // Attrito per non far espandere la spirale all'infinito se il mouse è fermo
-    if (pmouseX === mouseX && pmouseY === mouseY) {
-        angle = lerp(angle, 0, 0.02);
-    }
-
-    // Disegno e gestione memoria
-    for (let i = circles.length - 1; i >= 0; i--) {
-        circles[i].update();
-        circles[i].display();
-        
-        if (circles[i].isDead()) {
-            circles.splice(i, 1);
+    // --- LOGICA APPARIZIONE PESCI ---
+    if (millis() - startTime > 3000) {
+        let spawnRate = map(millis() - startTime, 3000, 30000, 0.05, 0.25); 
+        if (random(1) < spawnRate && deepFish.length < 22) {
+            let pX = random(width);
+            let pY = random(height);
+            let overlapping = false;
+            for (let f of deepFish) {
+                if (dist(pX, pY, f.pos.x, f.pos.y) < 100) {
+                    overlapping = true;
+                    break;
+                }
+            }
+            if (!overlapping) deepFish.push(new AbyssalFish(pX, pY));
         }
+    }
+
+    // --- LOGICA SPORE ---
+    if (mouseIsPressed || (pmouseX !== mouseX)) {
+        for (let i = 0; i < 4; i++) {
+            let offset = i * (TWO_PI / 4);
+            let r = sin(angle * 0.5) * 45; 
+            let posX = mouseX + cos(angle + offset) * r;
+            let posY = mouseY + sin(angle + offset) * r;
+            spores.push(new Spore(posX, posY, angle));
+            angle += 0.15;
+        }
+    }
+
+    // Gestione Pesci
+    for (let i = deepFish.length - 1; i >= 0; i--) {
+        deepFish[i].applyBehaviors(deepFish);
+        deepFish[i].update();
+        deepFish[i].display();
+        if (deepFish[i].isDead()) deepFish.splice(i, 1);
+    }
+
+    // Gestione Spore
+    for (let i = spores.length - 1; i >= 0; i--) {
+        spores[i].update();
+        spores[i].display();
+        if (spores[i].isDead()) spores.splice(i, 1);
     }
 }
 
-class PsyCircle {
-    constructor(x, y, a, isRed) {
-        this.x = x;
-        this.y = y;
-        this.size = random(3, 15);
-        this.alpha = 255;
-        this.fadeSpeed = 2.5;
+class AbyssalFish {
+    constructor(x, y) {
+        this.pos = createVector(x, y);
+        this.vel = p5.Vector.random2D();
+        this.acc = createVector(0, 0);
+        this.size = random(35, 50);
+        this.maxSpeed = random(3, 5); // Un po' più veloci per raggiungerti
+        this.maxForce = 0.2;         // Più reattivi
+        this.alpha = 0;
+        this.life = 600;
+        this.currentRot = 0;
+        this.noiseOffset = random(1000);
+    }
 
-        if (isRed) {
-            // Tonalità Rosso (Bilanciamento dei canali per intensità massima)
-            this.r = map(sin(a), -1, 1, 180, 255); // Rosso predominante
-            this.g = map(sin(a * 0.5), -1, 1, 0, 30);  // Poco verde per evitare l'arancio
-            this.b = map(cos(a), -1, 1, 5, 40);    // Poco blu per toni cremisi
+    applyBehaviors(fishes) {
+        let mouse = createVector(mouseX, mouseY);
+        
+        // 1. Attrazione verso il mouse (FORZA PRINCIPALE)
+        let seek = this.seek(mouse);
+        
+        // 2. Separazione (per non sovrapporsi)
+        let separate = this.separate(fishes);
+        
+        // 3. Flusso organico (Leggera perturbazione)
+        let noiseVal = noise(this.pos.x * 0.01, this.pos.y * 0.01, frameCount * 0.02);
+        let drift = p5.Vector.fromAngle(noiseVal * TWO_PI);
+        drift.mult(0.3); // Forza molto debole rispetto al mouse
+
+        seek.mult(2.5);     // Peso alto per seguire il cursore
+        separate.mult(3.0);  // Peso alto per evitare collisioni
+        
+        this.applyForce(seek);
+        this.applyForce(separate);
+        this.applyForce(drift);
+    }
+
+    applyForce(force) {
+        this.acc.add(force);
+    }
+
+    seek(target) {
+        let desired = p5.Vector.sub(target, this.pos);
+        let d = desired.mag();
+        
+        // Rallenta quando arriva molto vicino al mouse per non "impazzire"
+        if (d < 50) {
+            desired.setMag(map(d, 0, 50, 0, this.maxSpeed));
         } else {
-            // Tonalità Grigio/Argento
-            let gVal = map(sin(a), -1, 1, 100, 200);
-            this.r = gVal;
-            this.g = gVal;
-            this.b = gVal;
+            desired.setMag(this.maxSpeed);
         }
+        
+        let steer = p5.Vector.sub(desired, this.vel);
+        steer.limit(this.maxForce);
+        return steer;
+    }
+
+    separate(fishes) {
+        let desiredSeparation = 85;
+        let steer = createVector(0, 0);
+        let count = 0;
+        for (let other of fishes) {
+            let d = p5.Vector.dist(this.pos, other.pos);
+            if (d > 0 && d < desiredSeparation) {
+                let diff = p5.Vector.sub(this.pos, other.pos);
+                diff.normalize();
+                diff.div(d);
+                steer.add(diff);
+                count++;
+            }
+        }
+        if (count > 0) steer.div(count);
+        if (steer.mag() > 0) {
+            steer.setMag(this.maxSpeed);
+            steer.sub(this.vel);
+            steer.limit(this.maxForce);
+        }
+        return steer;
     }
 
     update() {
-        this.alpha -= this.fadeSpeed;
-        this.size += 0.1;
+        if (this.alpha < 255) this.alpha += 10;
+        this.life -= 0.6;
+        
+        this.vel.add(this.acc);
+        this.vel.limit(this.maxSpeed);
+        this.pos.add(this.vel);
+        this.acc.mult(0);
+        
+        // Rotazione fluida
+        let targetRot = this.vel.heading();
+        this.currentRot = lerpAngle(this.currentRot, targetRot, 0.15);
     }
 
     display() {
-        noStroke();
-        fill(this.r, this.g, this.b, this.alpha);
-        ellipse(this.x, this.y, this.size);
+        push();
+        translate(this.pos.x, this.pos.y);
+        rotate(this.currentRot);
+        
+        // Colpo di coda
+        let wag = sin(frameCount * 0.25 + this.noiseOffset) * 0.12;
+        rotate(wag);
+
+        let s = this.size;
+        let curAlpha = Math.min(this.alpha, this.life);
+        
+        noFill();
+        stroke(255, 255, 255, curAlpha);
+        strokeWeight(1.3);
+        
+        // CORPO ABISSALE
+        beginShape();
+        vertex(s * 0.4, 0); 
+        bezierVertex(s * 0.2, -s * 0.5, -s * 0.4, -s * 0.4, -s * 0.5, 0);
+        bezierVertex(-s * 0.3, s * 0.6, s * 0.3, s * 0.5, s * 0.4, 0);
+        endShape(CLOSE);
+
+        // DENTI
+        for(let i=0; i<3; i++) {
+            line(s*(0.3 - i*0.1), 0, s*(0.45 - i*0.1), s*0.12);
+        }
+
+        // ANTENNA
+        beginShape();
+        vertex(s * 0.1, -s * 0.35);
+        bezierVertex(s * 0.3, -s * 0.7, s * 0.6, -s * 0.4, s * 0.7, -s * 0.15);
+        endShape();
+        fill(255, curAlpha);
+        ellipse(s * 0.7, -s * 0.15, 3);
+
+        // OCCHIO
+        noFill();
+        ellipse(s * 0.15, -s * 0.1, 2);
+        
+        // CODA
+        line(-s * 0.5, 0, -s * 0.75, -s * 0.18);
+        line(-s * 0.5, 0, -s * 0.75, s * 0.18);
+        line(-s * 0.75, -s * 0.18, -s * 0.75, s * 0.18);
+        pop();
     }
 
-    isDead() {
-        return this.alpha <= 0;
+    isDead() { return this.life <= 0; }
+}
+
+function lerpAngle(a, b, step) {
+    let delta = b - a;
+    while (delta > PI) delta -= TWO_PI;
+    while (delta < -PI) delta += TWO_PI;
+    return a + delta * step;
+}
+
+class Spore {
+    constructor(x, y, a) {
+        this.pos = createVector(x, y);
+        this.vel = p5.Vector.fromAngle(a);
+        this.vel.mult(random(1, 2.5));
+        this.vel.y -= 1.0;
+        this.acc = createVector(0, -0.03);
+        this.life = 255;
+        this.decay = random(2, 4);
+        this.size = random(3, 8);
+        this.color = random() > 0.4 ? color(255, 40, 50, 255) : color(255, 200, 150, 255);
     }
+    update() {
+        this.vel.add(this.acc);
+        this.pos.add(this.vel);
+        this.life -= this.decay;
+        this.size *= 0.98;
+    }
+    display() {
+        noStroke();
+        fill(red(this.color), green(this.color), blue(this.color), this.life);
+        ellipse(this.pos.x, this.pos.y, this.size);
+    }
+    isDead() { return this.life <= 0; }
 }
 </script>
-
 </body>
 </html>

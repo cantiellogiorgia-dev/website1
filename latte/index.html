@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Composizione Tipografica Dinamica</title>
+    <title>Composizione Dinamica - Minimal Ripple</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <style>
         body { margin: 0; padding: 0; background: #000; overflow: hidden; }
@@ -20,44 +20,42 @@ let wordElla = "ELLA";
 let wordGinocchia = "GINOCCHIA";
 let index = 0;
 
-// Variabili per lo sfondo a pixel
-let gridSize = 10; // Dimensione di ogni "pixel" dello sfondo
+// Variabili Sfondo e Onde
+let gridSize = 12; 
 let bgPattern = [];
-let invertColors = false;
+let ripples = []; 
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
     textFont('Helvetica, Arial, sans-serif');
     textStyle(BOLD);
     textSize(50);
-    generateBackground(); // Crea lo schema iniziale
+    generateBackground();
 }
 
 function generateBackground() {
     bgPattern = [];
     let cols = ceil(width / gridSize);
     let rows = ceil(height / gridSize);
-    
     for (let i = 0; i < cols; i++) {
         bgPattern[i] = [];
         for (let j = 0; j < rows; j++) {
-            // Genera un valore randomico tra 1 e 5 per decidere la densità del grigio
-            let r = floor(random(1, 6));
-            bgPattern[i][j] = (r === 1); // 1 possibilità su 5 che sia grigio (o nero se invertito)
+            bgPattern[i][j] = (floor(random(1, 6)) === 1);
         }
     }
 }
 
 function mousePressed() {
-    // Inverte i colori e rigenera lo schema ad ogni click
-    invertColors = !invertColors;
-    generateBackground();
+    // Genera 3 onde molto sottili con velocità diverse
+    ripples.push(new Ripple(mouseX, mouseY, 7, 15));  // Onda veloce e sottile
+    ripples.push(new Ripple(mouseX, mouseY, 4, 10));  // Onda media
+    ripples.push(new Ripple(mouseX, mouseY, 2.5, 8)); // Onda lenta e finissima
 }
 
 function draw() {
-    drawPixelBackground();
+    drawRippleBackground();
 
-    // Gestione comparsa lettere
+    // Logica comparsa lettere
     if (millis() - timer > 300) {
         if (step === 0) {
             elements.push(new MovingLetter(wordLatte[index], width * 0.2, height + 50, 0, -3.5));
@@ -75,30 +73,59 @@ function draw() {
         timer = millis();
     }
 
-    // Aggiornamento e disegno lettere
+    // Aggiornamento lettere
     for (let i = elements.length - 1; i >= 0; i--) {
         elements[i].update();
         elements[i].display();
-        if (elements[i].isOffScreen()) {
-            elements.splice(i, 1);
-        }
+        if (elements[i].isOffScreen()) elements.splice(i, 1);
+    }
+
+    // Gestione onde
+    for (let i = ripples.length - 1; i >= 0; i--) {
+        ripples[i].update();
+        if (ripples[i].isFinished()) ripples.splice(i, 1);
     }
 }
 
-function drawPixelBackground() {
+function drawRippleBackground() {
     noStroke();
     let cols = bgPattern.length;
     let rows = bgPattern[0].length;
 
     for (let i = 0; i < cols; i++) {
         for (let j = 0; j < rows; j++) {
-            if (bgPattern[i][j]) {
-                fill(invertColors ? 0 : 60); // Grigio scuro o Nero
-            } else {
-                fill(invertColors ? 60 : 0); // Nero o Grigio scuro
+            let px = i * gridSize;
+            let py = j * gridSize;
+            let isColored = bgPattern[i][j];
+
+            for (let r of ripples) {
+                let d = dist(px, py, r.x, r.y);
+                // L'inversione avviene solo in una fascia molto stretta (linea sottile)
+                if (d < r.radius && d > r.radius - r.thickness) {
+                    isColored = !isColored;
+                }
             }
-            rect(i * gridSize, j * gridSize, gridSize, gridSize);
+
+            fill(isColored ? 65 : 0); // Solo nero e grigio, senza bordi
+            rect(px, py, gridSize, gridSize);
         }
+    }
+}
+
+class Ripple {
+    constructor(x, y, speed, thickness) {
+        this.x = x;
+        this.y = y;
+        this.radius = 0;
+        this.speed = speed;
+        this.thickness = thickness;
+        this.maxRadius = max(width, height) * 1.5;
+    }
+    update() {
+        this.radius += this.speed;
+    }
+    isFinished() {
+        return this.radius > this.maxRadius + this.thickness;
     }
 }
 
@@ -110,24 +137,18 @@ class MovingLetter {
         this.speedX = speedX;
         this.speedY = speedY;
     }
-
     update() {
         this.x += this.speedX;
         this.y += this.speedY;
     }
-
     display() {
-        fill(255); // Lettere sempre bianche
-        // Un leggero bagliore nero per staccare dallo sfondo grigio
-        drawingContext.shadowBlur = 10;
-        drawingContext.shadowColor = 'black';
+        noStroke(); // Rimuove eventuali bordi dalle lettere
+        fill(255);
         textAlign(CENTER, CENTER);
         text(this.char, this.x, this.y);
-        drawingContext.shadowBlur = 0;
     }
-
     isOffScreen() {
-        return (this.x < -100 || this.x > width + 100 || this.y < -100 || this.y > height + 100);
+        return (this.x < -150 || this.x > width + 150 || this.y < -150 || this.y > height + 150);
     }
 }
 

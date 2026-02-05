@@ -2,10 +2,10 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>SPOT!MASH - Auto-Search System</title>
+    <title>SPOT!MASH - Unique Choreography Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <style>
-        body { margin: 0; padding: 0; background-color: #050508; overflow: hidden; font-family: 'Courier New', monospace; cursor: crosshair; }
+        body { margin: 0; padding: 0; background-color: #E0E0E0; overflow: hidden; font-family: 'Courier New', monospace; cursor: crosshair; }
         canvas { display: block; }
     </style>
 </head>
@@ -13,39 +13,32 @@
 
 <script>
 let albums = [
-    // RIGA 0
-    { title: "Toxic", artist: "Playboi Carti, Skepta", row: 0, cover: 'https://upload.wikimedia.org/wikipedia/en/f/f4/Skepta_-_Ignorance_Is_Bliss.png' },
-    { title: "What happened to the streets", artist: "21 Savage", row: 0, cover: 'https://upload.wikimedia.org/wikipedia/en/3/36/21_Savage_-_American_Dream.png' },
-    { title: "Anima macchina", artist: "Sxrrrxwlnd", row: 0, cover: 'https://i.scdn.co/image/ab67616d0000b27341854930267750831620c3a8' },
-    { title: "Tonypitony", artist: "Tonypitony", row: 0, cover: 'https://i.scdn.co/image/ab67616d0000b273934f0d37e6f85104d496a7cc' },
-    { title: "Era l’inizio", artist: "EMMA", row: 0, cover: 'https://i.scdn.co/image/ab67616d0000b27393496057973d434193563462' },
-
-    // RIGA 1
-    { title: "Scarabocchi", artist: "Chiello", row: 1, cover: 'https://i.scdn.co/image/ab67616d0000b27389808d4474776104e7668600' },
-    { title: "Fessure", artist: "Cedric Blaser", row: 1, cover: 'https://i.scdn.co/image/ab67616d0000b273d4586d63421d0356e793540d' },
-    { title: "Sogni", artist: "i PATAGARRI", row: 1, cover: 'https://i.scdn.co/image/ab67616d0000b27387431e67040445a49c4f52e5' },
-    { title: "Situazione complicata", artist: "Lucio Corsi", row: 1, cover: 'https://i.scdn.co/image/ab67616d0000b2738870377e686c673479015093' }
+    { title: "Toxic", artist: "Playboi Carti, Skepta", row: 0, danceStyle: 0, cover: 'https://upload.wikimedia.org/wikipedia/en/f/f4/Skepta_-_Ignorance_Is_Bliss.png' },
+    { title: "What happened to the streets", artist: "21 Savage", row: 0, danceStyle: 1, cover: 'https://upload.wikimedia.org/wikipedia/en/3/36/21_Savage_-_American_Dream.png' },
+    { title: "Anima macchina", artist: "Sxrrrxwlnd", row: 0, danceStyle: 2, cover: 'https://i.scdn.co/image/ab67616d0000b27341854930267750831620c3a8' },
+    { title: "Tonypitony", artist: "Tonypitony", row: 0, danceStyle: 3, cover: 'https://i.scdn.co/image/ab67616d0000b273934f0d37e6f85104d496a7cc' },
+    { title: "Era l’inizio", artist: "EMMA", row: 0, danceStyle: 0, cover: 'https://i.scdn.co/image/ab67616d0000b27393496057973d434193563462' },
+    { title: "Scarabocchi", artist: "Chiello", row: 1, danceStyle: 1, cover: 'https://i.scdn.co/image/ab67616d0000b27389808d4474776104e7668600' },
+    { title: "Fessure", artist: "Cedric Blaser", row: 1, danceStyle: 2, cover: 'https://i.scdn.co/image/ab67616d0000b273d4586d63421d0356e793540d' },
+    { title: "Sogni", artist: "i PATAGARRI", row: 1, danceStyle: 3, cover: 'https://i.scdn.co/image/ab67616d0000b27387431e67040445a49c4f52e5' },
+    { title: "Situazione complicata", artist: "Lucio Corsi", row: 1, danceStyle: 0, cover: 'https://i.scdn.co/image/ab67616d0000b2738870377e686c673479015093' }
 ];
 
 let loadedCovers = [];
 let scrollX = 0;
 let targetScrollX = 0;
-let dancerTypes = [];
 let spacing = 520; 
+let ultramarine = [18, 10, 143];
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
     albums.forEach((album, i) => {
-        loadedCovers[i] = loadImage(album.cover, 
-            img => console.log("Loaded: " + album.title),
-            err => loadedCovers[i] = createPlaceholder(album.title)
-        );
-        dancerTypes[i] = floor(random(4));
+        loadedCovers[i] = loadImage(album.cover);
     });
 }
 
 function draw() {
-    background(8, 8, 12);
+    background(224);
     scrollX = lerp(scrollX, targetScrollX, 0.1);
     drawUI();
 
@@ -61,14 +54,13 @@ function draw() {
 function drawUI() {
     push();
     textAlign(CENTER);
-    fill(255, 0, 0); // Rosso YouTube style per il sottotitolo
-    textSize(50);
     textStyle(BOLD);
-    fill(29, 185, 84);
+    fill(ultramarine);
+    textSize(50);
     text("SPOT!MASH", width/2, 60);
     textSize(11);
-    fill(200);
-    text("AUTO-LINKING TO YOUTUBE ENABLED | CLICK TO PLAY", width/2, 90);
+    textStyle(NORMAL);
+    text("EVERY CHARACTER HAS A UNIQUE CHILL DANCE | CLICK TO PLAY", width/2, 90);
     pop();
 }
 
@@ -79,52 +71,74 @@ function drawRow(rowNum, y) {
     rowAlbums.forEach((album, i) => {
         let x = (width / 2) + (i * spacing) - (rowAlbums.length * spacing / 2.5);
         let imgIdx = albums.indexOf(album);
-        drawDancer(x - 145, y, imgIdx);
+        
+        let realX = x + scrollX;
+        let isOverDancer = dist(mouseX, mouseY, realX - 145, y + 20) < 60;
+        
+        drawDancer(x - 145, y, imgIdx, isOverDancer, album.danceStyle);
         drawCover(x, y, album, loadedCovers[imgIdx]);
     });
     pop();
 }
 
-function drawDancer(x, y, idx) {
-    fill(255);
+function drawDancer(x, y, idx, isDancing, style) {
+    fill(ultramarine);
     textSize(22);
     textFont('monospace');
-    let type = dancerTypes[idx];
-    let bounce = sin(frameCount * 0.1 + idx) * 8;
+    textAlign(CENTER);
+    
+    let headY = sin(frameCount * 0.08 + idx) * 5;
+    let arms = "/|\\";
+    let legs = "/ \\";
+    let xOff = 0;
+
+    if (isDancing) {
+        let slowTime = frameCount * 0.05;
+        
+        if (style === 0) { // THE NODDER: Solo testa e braccia su/giù
+            headY = sin(slowTime * 2) * 10;
+            arms = (sin(slowTime * 2) > 0) ? "_|_" : "/|\\";
+        } 
+        else if (style === 1) { // THE SHAKER: Spostamento laterale e braccia oblique
+            xOff = sin(slowTime * 2) * 8;
+            arms = (xOff > 0) ? "\\|/" : "/|\\";
+        } 
+        else if (style === 2) { // THE WAVER: Braccia che oscillano alternate
+            arms = (floor(frameCount * 0.07) % 2 === 0) ? "v|v" : "^|^";
+            headY = 2;
+        } 
+        else if (style === 3) { // THE BENDER: Gambe e testa
+            legs = (sin(slowTime * 2) > 0) ? "| |" : "/ \\";
+            headY = sin(slowTime * 2) * 6;
+        }
+    }
+
     push();
-    translate(x, y);
-    if (type === 0) { text("  O  ", 0, bounce); text(" /|\\ ", 0, 22 + bounce); text(" / \\ ", 0, 44 + bounce); }
-    else if (type === 1) { text(" \\O/ ", 0, bounce - 5); text("  |  ", 0, 17 + bounce); text(" / \\ ", 0, 39 + bounce); }
-    else if (type === 2) { text("  O  ", 0, bounce); text(" <|> ", 0, 22 + bounce); text(" / \\ ", 0, 44 + bounce); }
-    else { text("  O/ ", 0, bounce); text(" /|  ", 0, 22 + bounce); text(" / \\ ", 0, 44 + bounce); }
+    translate(x + xOff, y);
+    text("  O  ", 0, headY); 
+    text(arms, 0, 22);      
+    text(legs, 0, 44);      
     pop();
 }
 
 function drawCover(x, y, album, img) {
     rectMode(CENTER);
     let isHover = dist(mouseX - scrollX, mouseY, x, y) < 95;
-    stroke(isHover ? 255 : 29, 185, 84, 150);
-    strokeWeight(isHover ? 3 : 1);
+    stroke(ultramarine);
+    strokeWeight(isHover ? 4 : 1);
     noFill();
     rect(x, y, 180, 180);
-    
     if (img && img.width > 1) {
         imageMode(CENTER);
         image(img, x, y, 172, 172);
-    } else {
-        fill(30);
-        rect(x, y, 172, 172);
-        fill(255);
-        textSize(10);
-        text("LOADING...", x, y);
     }
-    
     noStroke();
     textAlign(CENTER);
-    fill(isHover ? 255 : 180);
+    fill(ultramarine);
     textSize(11);
+    textStyle(BOLD);
     text(album.title.toUpperCase(), x, y + 115);
-    fill(100);
+    textStyle(NORMAL);
     textSize(9);
     text(album.artist, x, y + 130);
 }
@@ -137,11 +151,8 @@ function mousePressed() {
             let x = (width / 2) + (i * spacing) - (rowAlbums.length * spacing / 2.5);
             if (mouseX > (x + scrollX) - 90 && mouseX < (x + scrollX) + 90 &&
                 mouseY > rowY - 90 && mouseY < rowY + 90) {
-                
-                // GENERAZIONE AUTOMATICA DEL LINK YOUTUBE
                 let searchQuery = encodeURIComponent(album.artist + " " + album.title);
-                let youtubeURL = "https://www.youtube.com/results?search_query=" + searchQuery;
-                window.open(youtubeURL, '_blank');
+                window.open("https://www.youtube.com/results?search_query=" + searchQuery, '_blank');
             }
         });
     }

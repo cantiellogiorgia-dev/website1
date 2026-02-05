@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>SPOT!MASH - 2-Tier Interactive System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body { margin: 0; padding: 0; background-color: #050508; overflow: hidden; font-family: 'Courier New', monospace; cursor: crosshair; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+<script>
+let albums = [
+    // RIGA 0 (Linea Superiore)
+    { title: "DAMN.", artist: "Kendrick Lamar", row: 0, cover: 'https://upload.wikimedia.org/wikipedia/en/5/51/Kendrick_Lamar_-_Damn.png', link: '#' },
+    { title: "Discovery", artist: "Daft Punk", row: 0, cover: 'https://upload.wikimedia.org/wikipedia/en/a/ae/Daft_Punk_-_Discovery.jpg', link: '#' },
+    { title: "Nevermind", artist: "Nirvana", row: 0, cover: 'https://upload.wikimedia.org/wikipedia/en/b/b7/NirvanaNevermindalbumcover.jpg', link: '#' },
+    { title: "After Hours", artist: "The Weeknd", row: 0, cover: 'https://upload.wikimedia.org/wikipedia/en/c/c1/The_Weeknd_-_After_Hours.png', link: '#' },
+    
+    // RIGA 1 (Linea Inferiore)
+    { title: "Future Nostalgia", artist: "Dua Lipa", row: 1, cover: 'https://upload.wikimedia.org/wikipedia/en/f/f5/Dua_Lipa_-_Future_Nostalgia.png', link: '#' },
+    { title: "Kind of Blue", artist: "Miles Davis", row: 1, cover: 'https://upload.wikimedia.org/wikipedia/en/9/9c/MilesDavisKindofBlue.jpg', link: '#' },
+    { title: "The Dark Side", artist: "Pink Floyd", row: 1, cover: 'https://upload.wikimedia.org/wikipedia/en/3/3b/Dark_Side_of_the_Moon.png', link: '#' },
+    { title: "Blonde", artist: "Frank Ocean", row: 1, cover: 'https://upload.wikimedia.org/wikipedia/en/a/a0/Blonde_-_Frank_Ocean.jpeg', link: '#' }
+];
+
+let loadedCovers = [];
+let scrollX = 0;
+let targetScrollX = 0;
+let dancerTypes = [];
+let spacing = 480; 
+
+function setup() {
+    createCanvas(windowWidth, windowHeight);
+    albums.forEach((album, i) => {
+        loadedCovers[i] = loadImage(album.cover);
+        dancerTypes[i] = floor(random(4));
+    });
+}
+
+function draw() {
+    background(8, 8, 12);
+    scrollX = lerp(scrollX, targetScrollX, 0.1);
+    drawUI();
+
+    // Disegno le 2 linee immaginarie
+    for (let r = 0; r < 2; r++) {
+        // Ripartizione verticale: la prima a 1/3, la seconda a 2/3 dell'altezza utile
+        let rowY = map(r, 0, 1, height * 0.35, height * 0.75);
+        drawRow(r, rowY);
+    }
+
+    if (keyIsDown(LEFT_ARROW)) targetScrollX += 15;
+    if (keyIsDown(RIGHT_ARROW)) targetScrollX -= 15;
+}
+
+function drawUI() {
+    push();
+    textAlign(CENTER);
+    fill(29, 185, 84);
+    textSize(50);
+    textStyle(BOLD);
+    text("SPOT!MASH", width/2, 60);
+    textSize(12);
+    fill(100);
+    text("SCORRI ← → | CLICCA PER APRIRE", width/2, 90);
+    pop();
+}
+
+function drawRow(rowNum, y) {
+    let rowAlbums = albums.filter(a => a.row === rowNum);
+    push();
+    translate(scrollX, 0);
+    rowAlbums.forEach((album, i) => {
+        let x = (width / 2) + (i * spacing) - (rowAlbums.length * spacing / 4);
+        let imgIdx = albums.indexOf(album);
+        drawDancer(x - 135, y, imgIdx);
+        drawCover(x, y, album, loadedCovers[imgIdx]);
+    });
+    pop();
+}
+
+function drawDancer(x, y, idx) {
+    fill(255);
+    textSize(22);
+    textFont('monospace');
+    textAlign(CENTER);
+    let type = dancerTypes[idx];
+    let bounce = sin(frameCount * 0.1 + idx) * 8;
+    push();
+    translate(x, y);
+    if (type === 0) { text("  O  ", 0, bounce); text(" /|\\ ", 0, 22 + bounce); text(" / \\ ", 0, 44 + bounce); }
+    else if (type === 1) { text(" \\O/ ", 0, bounce - 5); text("  |  ", 0, 17 + bounce); text(" / \\ ", 0, 39 + bounce); }
+    else if (type === 2) { text("  O  ", 0, bounce); text(" <|> ", 0, 22 + bounce); text(" / \\ ", 0, 44 + bounce); }
+    else { text("  O/ ", 0, bounce); text(" /|  ", 0, 22 + bounce); text(" / \\ ", 0, 44 + bounce); }
+    pop();
+}
+
+function drawCover(x, y, album, img) {
+    rectMode(CENTER);
+    let isHover = dist(mouseX - scrollX, mouseY, x, y) < 90;
+    
+    // Effetto selezione
+    if(isHover) {
+        stroke(255);
+        strokeWeight(3);
+    } else {
+        stroke(29, 185, 84, 150);
+        strokeWeight(1);
+    }
+    
+    noFill();
+    rect(x, y, 180, 180);
+    if (img) { imageMode(CENTER); image(img, x, y, 170, 170); }
+    
+    noStroke();
+    textAlign(CENTER);
+    fill(isHover ? 255 : 200);
+    textSize(12);
+    text(album.title.toUpperCase(), x, y + 115);
+    textSize(10);
+    fill(150);
+    text(album.artist, x, y + 130);
+}
+
+function mousePressed() {
+    for (let r = 0; r < 2; r++) {
+        let rowY = map(r, 0, 1, height * 0.35, height * 0.75);
+        let rowAlbums = albums.filter(a => a.row === r);
+        rowAlbums.forEach((album, i) => {
+            let x = (width / 2) + (i * spacing) - (rowAlbums.length * spacing / 4);
+            if (mouseX > (x + scrollX) - 90 && mouseX < (x + scrollX) + 90 &&
+                mouseY > rowY - 90 && mouseY < rowY + 90) {
+                if (album.link && album.link !== '#') {
+                    window.open(album.link, '_blank');
+                }
+            }
+        });
+    }
+}
+
+function mouseWheel(event) { targetScrollX -= event.delta; }
+function windowResized() { resizeCanvas(windowWidth, windowHeight); }
+</script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Castle Escape - Fixed</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f0f0f0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            overflow: hidden;
+            font-family: 'Helvetica', sans-serif;
+        }
+        canvas { 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 2px solid #999;
+        }
+    </style>
+</head>
+<body>
+
+<script>
+let mario;
+let blocks = [];
+let score = 0;
+let lavaSpeed = 2.5;
+let timerDiff = 0;
+let lastJump = 0;
+let state = "START"; 
+
+function setup() {
+    createCanvas(400, 600);
+    mario = new Mario();
+}
+
+function draw() {
+    background(220); // Grigio uniforme
+
+    if (state === "START") {
+        drawMenu();
+    } else if (state === "PLAY") {
+        runGame();
+    } else if (state === "END") {
+        drawEnd();
+    }
+}
+
+function drawMenu() {
+    textAlign(CENTER);
+    fill(50);
+    textSize(32);
+    textStyle(BOLD);
+    text("CASTLE ESCAPE", width/2, height/2 - 60);
+    
+    fill(0, 120, 215);
+    rectMode(CENTER);
+    rect(width/2, height/2, 160, 55, 10);
+    
+    fill(255);
+    noStroke();
+    textSize(20);
+    text("START", width/2, height/2 + 7);
+    
+    fill(100);
+    textStyle(NORMAL);
+    textSize(14);
+    text("Frecce: Muovi | Mouse: Salta", width/2, height/2 + 100);
+}
+
+function runGame() {
+    if (millis() - timerDiff > 10000) {
+        lavaSpeed += 0.5;
+        timerDiff = millis();
+    }
+
+    // Movimento orizzontale
+    if (keyIsDown(LEFT)

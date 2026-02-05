@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BOOM Pixelated Chaos Corrected</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background-color: #000; 
+            overflow: hidden; 
+        }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+<script>
+let particles = [];
+let numParticles = 360; 
+
+function setup() {
+    createCanvas(windowWidth, windowHeight);
+    // Usiamo il nome del font caricato dal CSS
+    textFont("'Press Start 2P', cursive");
+    textAlign(CENTER, CENTER);
+    
+    for (let i = 0; i < numParticles; i++) {
+        particles.push(new Word(random(width), random(height)));
+    }
+}
+
+function draw() {
+    background(0); 
+    for (let p of particles) {
+        p.update();
+        p.bounce();
+        p.display();
+    }
+}
+
+class Word {
+    constructor(x, y) {
+        this.pos = createVector(x, y);
+        this.vel = p5.Vector.random2D().mult(random(2, 5));
+        this.acc = createVector(0, 0);
+        
+        this.oSize = 14; 
+        this.maxOSize = windowHeight * 1.1; 
+        this.isPopped = false;
+        this.opacity = 255;
+    }
+
+    update() {
+        let mouse = createVector(mouseX, mouseY);
+        let d = p5.Vector.dist(mouse, this.pos);
+
+        if (d < 50 && !this.isPopped) {
+            let flee = p5.Vector.sub(this.pos, mouse);
+            flee.setMag(2.5); 
+            this.acc.add(flee);
+            
+            this.oSize *= 1.22; // Crescita esponenziale veloce
+            
+            if (this.oSize > this.maxOSize) {
+                this.isPopped = true;
+            }
+        } else {
+            this.oSize = lerp(this.oSize, 14, 0.05);
+        }
+
+        this.vel.add(this.acc);
+        this.vel.limit(15); 
+        this.pos.add(this.vel);
+        this.acc.mult(0);
+        this.vel.mult(0.99);
+
+        if (this.isPopped) {
+            this.opacity -= 20; 
+            if (this.opacity < 0) this.reset();
+        }
+    }
+
+    bounce() {
+        if (this.pos.x < 0 || this.pos.x > width) this.vel.x *= -1;
+        if (this.pos.y < 0 || this.pos.y > height) this.vel.y *= -1;
+    }
+
+    reset() {
+        this.isPopped = false;
+        this.oSize = 14;
+        this.opacity = 255;
+        this.pos.set(random(width), random(height));
+        this.vel = p5.Vector.random2D().mult(random(2, 5));
+    }
+
+    display() {
+        push();
+        translate(this.pos.x, this.pos.y);
+        noStroke();
+        fill(255, this.opacity);
+
+        // B e M fisse
+        textSize(14);
+        text("B", -this.oSize/2 - 10, 0);
+        text("M", this.oSize/2 + 10, 0);
+        
+        // Le O che esplodono
+        textSize(this.oSize);
+        text("O", -this.oSize/5, 0);
+        text("O", this.oSize/5, 0);
+        pop();
+    }
+}
+
+function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+}
+</script>
+
+</body>
+</html>

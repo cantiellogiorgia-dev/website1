@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>SPOT!MASH - 2-Tier Interactive System</title>
+    <title>SPOT!MASH - Auto-Search System</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <style>
         body { margin: 0; padding: 0; background-color: #050508; overflow: hidden; font-family: 'Courier New', monospace; cursor: crosshair; }
@@ -13,29 +13,33 @@
 
 <script>
 let albums = [
-    // RIGA 0 (Linea Superiore)
-    { title: "DAMN.", artist: "Kendrick Lamar", row: 0, cover: 'https://upload.wikimedia.org/wikipedia/en/5/51/Kendrick_Lamar_-_Damn.png', link: '#' },
-    { title: "Discovery", artist: "Daft Punk", row: 0, cover: 'https://upload.wikimedia.org/wikipedia/en/a/ae/Daft_Punk_-_Discovery.jpg', link: '#' },
-    { title: "Nevermind", artist: "Nirvana", row: 0, cover: 'https://upload.wikimedia.org/wikipedia/en/b/b7/NirvanaNevermindalbumcover.jpg', link: '#' },
-    { title: "After Hours", artist: "The Weeknd", row: 0, cover: 'https://upload.wikimedia.org/wikipedia/en/c/c1/The_Weeknd_-_After_Hours.png', link: '#' },
-    
-    // RIGA 1 (Linea Inferiore)
-    { title: "Future Nostalgia", artist: "Dua Lipa", row: 1, cover: 'https://upload.wikimedia.org/wikipedia/en/f/f5/Dua_Lipa_-_Future_Nostalgia.png', link: '#' },
-    { title: "Kind of Blue", artist: "Miles Davis", row: 1, cover: 'https://upload.wikimedia.org/wikipedia/en/9/9c/MilesDavisKindofBlue.jpg', link: '#' },
-    { title: "The Dark Side", artist: "Pink Floyd", row: 1, cover: 'https://upload.wikimedia.org/wikipedia/en/3/3b/Dark_Side_of_the_Moon.png', link: '#' },
-    { title: "Blonde", artist: "Frank Ocean", row: 1, cover: 'https://upload.wikimedia.org/wikipedia/en/a/a0/Blonde_-_Frank_Ocean.jpeg', link: '#' }
+    // RIGA 0
+    { title: "Toxic", artist: "Playboi Carti, Skepta", row: 0, cover: 'https://upload.wikimedia.org/wikipedia/en/f/f4/Skepta_-_Ignorance_Is_Bliss.png' },
+    { title: "What happened to the streets", artist: "21 Savage", row: 0, cover: 'https://upload.wikimedia.org/wikipedia/en/3/36/21_Savage_-_American_Dream.png' },
+    { title: "Anima macchina", artist: "Sxrrrxwlnd", row: 0, cover: 'https://i.scdn.co/image/ab67616d0000b27341854930267750831620c3a8' },
+    { title: "Tonypitony", artist: "Tonypitony", row: 0, cover: 'https://i.scdn.co/image/ab67616d0000b273934f0d37e6f85104d496a7cc' },
+    { title: "Era l’inizio", artist: "EMMA", row: 0, cover: 'https://i.scdn.co/image/ab67616d0000b27393496057973d434193563462' },
+
+    // RIGA 1
+    { title: "Scarabocchi", artist: "Chiello", row: 1, cover: 'https://i.scdn.co/image/ab67616d0000b27389808d4474776104e7668600' },
+    { title: "Fessure", artist: "Cedric Blaser", row: 1, cover: 'https://i.scdn.co/image/ab67616d0000b273d4586d63421d0356e793540d' },
+    { title: "Sogni", artist: "i PATAGARRI", row: 1, cover: 'https://i.scdn.co/image/ab67616d0000b27387431e67040445a49c4f52e5' },
+    { title: "Situazione complicata", artist: "Lucio Corsi", row: 1, cover: 'https://i.scdn.co/image/ab67616d0000b2738870377e686c673479015093' }
 ];
 
 let loadedCovers = [];
 let scrollX = 0;
 let targetScrollX = 0;
 let dancerTypes = [];
-let spacing = 480; 
+let spacing = 520; 
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
     albums.forEach((album, i) => {
-        loadedCovers[i] = loadImage(album.cover);
+        loadedCovers[i] = loadImage(album.cover, 
+            img => console.log("Loaded: " + album.title),
+            err => loadedCovers[i] = createPlaceholder(album.title)
+        );
         dancerTypes[i] = floor(random(4));
     });
 }
@@ -45,27 +49,26 @@ function draw() {
     scrollX = lerp(scrollX, targetScrollX, 0.1);
     drawUI();
 
-    // Disegno le 2 linee immaginarie
     for (let r = 0; r < 2; r++) {
-        // Ripartizione verticale: la prima a 1/3, la seconda a 2/3 dell'altezza utile
         let rowY = map(r, 0, 1, height * 0.35, height * 0.75);
         drawRow(r, rowY);
     }
 
-    if (keyIsDown(LEFT_ARROW)) targetScrollX += 15;
-    if (keyIsDown(RIGHT_ARROW)) targetScrollX -= 15;
+    if (keyIsDown(LEFT_ARROW)) targetScrollX += 18;
+    if (keyIsDown(RIGHT_ARROW)) targetScrollX -= 18;
 }
 
 function drawUI() {
     push();
     textAlign(CENTER);
-    fill(29, 185, 84);
+    fill(255, 0, 0); // Rosso YouTube style per il sottotitolo
     textSize(50);
     textStyle(BOLD);
+    fill(29, 185, 84);
     text("SPOT!MASH", width/2, 60);
-    textSize(12);
-    fill(100);
-    text("SCORRI ← → | CLICCA PER APRIRE", width/2, 90);
+    textSize(11);
+    fill(200);
+    text("AUTO-LINKING TO YOUTUBE ENABLED | CLICK TO PLAY", width/2, 90);
     pop();
 }
 
@@ -74,9 +77,9 @@ function drawRow(rowNum, y) {
     push();
     translate(scrollX, 0);
     rowAlbums.forEach((album, i) => {
-        let x = (width / 2) + (i * spacing) - (rowAlbums.length * spacing / 4);
+        let x = (width / 2) + (i * spacing) - (rowAlbums.length * spacing / 2.5);
         let imgIdx = albums.indexOf(album);
-        drawDancer(x - 135, y, imgIdx);
+        drawDancer(x - 145, y, imgIdx);
         drawCover(x, y, album, loadedCovers[imgIdx]);
     });
     pop();
@@ -86,7 +89,6 @@ function drawDancer(x, y, idx) {
     fill(255);
     textSize(22);
     textFont('monospace');
-    textAlign(CENTER);
     let type = dancerTypes[idx];
     let bounce = sin(frameCount * 0.1 + idx) * 8;
     push();
@@ -100,28 +102,30 @@ function drawDancer(x, y, idx) {
 
 function drawCover(x, y, album, img) {
     rectMode(CENTER);
-    let isHover = dist(mouseX - scrollX, mouseY, x, y) < 90;
-    
-    // Effetto selezione
-    if(isHover) {
-        stroke(255);
-        strokeWeight(3);
-    } else {
-        stroke(29, 185, 84, 150);
-        strokeWeight(1);
-    }
-    
+    let isHover = dist(mouseX - scrollX, mouseY, x, y) < 95;
+    stroke(isHover ? 255 : 29, 185, 84, 150);
+    strokeWeight(isHover ? 3 : 1);
     noFill();
     rect(x, y, 180, 180);
-    if (img) { imageMode(CENTER); image(img, x, y, 170, 170); }
+    
+    if (img && img.width > 1) {
+        imageMode(CENTER);
+        image(img, x, y, 172, 172);
+    } else {
+        fill(30);
+        rect(x, y, 172, 172);
+        fill(255);
+        textSize(10);
+        text("LOADING...", x, y);
+    }
     
     noStroke();
     textAlign(CENTER);
-    fill(isHover ? 255 : 200);
-    textSize(12);
+    fill(isHover ? 255 : 180);
+    textSize(11);
     text(album.title.toUpperCase(), x, y + 115);
-    textSize(10);
-    fill(150);
+    fill(100);
+    textSize(9);
     text(album.artist, x, y + 130);
 }
 
@@ -130,12 +134,14 @@ function mousePressed() {
         let rowY = map(r, 0, 1, height * 0.35, height * 0.75);
         let rowAlbums = albums.filter(a => a.row === r);
         rowAlbums.forEach((album, i) => {
-            let x = (width / 2) + (i * spacing) - (rowAlbums.length * spacing / 4);
+            let x = (width / 2) + (i * spacing) - (rowAlbums.length * spacing / 2.5);
             if (mouseX > (x + scrollX) - 90 && mouseX < (x + scrollX) + 90 &&
                 mouseY > rowY - 90 && mouseY < rowY + 90) {
-                if (album.link && album.link !== '#') {
-                    window.open(album.link, '_blank');
-                }
+                
+                // GENERAZIONE AUTOMATICA DEL LINK YOUTUBE
+                let searchQuery = encodeURIComponent(album.artist + " " + album.title);
+                let youtubeURL = "https://www.youtube.com/results?search_query=" + searchQuery;
+                window.open(youtubeURL, '_blank');
             }
         });
     }

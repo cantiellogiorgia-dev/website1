@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Composizione Tipografica - ELLA</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+<script>
+let elements = [];
+let timer = 0;
+let step = 0; // 0: LATTE, 1: ELLA, 2: GINOCCHIA
+let wordLatte = "LATTE";
+let wordElla = "ELLA";
+let wordGinocchia = "GINOCCHIA";
+let index = 0;
+
+function setup() {
+    createCanvas(windowWidth, windowHeight);
+    textFont('Helvetica, Arial, sans-serif');
+    textStyle(BOLD);
+    textSize(45);
+}
+
+function draw() {
+    background(0); // Sfondo nero assoluto
+
+    // Gestione temporizzata della comparsa delle lettere (ogni 300ms)
+    if (millis() - timer > 300) {
+        if (step === 0) {
+            // LATTE: Dal basso verso l'alto (Verticale UP)
+            elements.push(new MovingLetter(wordLatte[index], width * 0.2, height + 50, 0, -3.5));
+            index++;
+            if (index >= wordLatte.length) { step = 1; index = 0; }
+        } else if (step === 1) {
+            // ELLA: Da sinistra verso destra (Orizzontale RIGHT)
+            elements.push(new MovingLetter(wordElla[index], -50, height * 0.5, 4.5, 0));
+            index++;
+            if (index >= wordElla.length) { step = 2; index = 0; }
+        } else if (step === 2) {
+            // GINOCCHIA: Dall'alto verso il basso (Verticale DOWN)
+            elements.push(new MovingLetter(wordGinocchia[index], width * 0.8, -50, 0, 3.5));
+            index++;
+            if (index >= wordGinocchia.length) { step = 0; index = 0; }
+        }
+        timer = millis();
+    }
+
+    // Aggiornamento e disegno dei caratteri
+    for (let i = elements.length - 1; i >= 0; i--) {
+        elements[i].update();
+        elements[i].display();
+        
+        // Rimuove gli elementi quando escono dal campo visivo
+        if (elements[i].isOffScreen()) {
+            elements.splice(i, 1);
+        }
+    }
+}
+
+class MovingLetter {
+    constructor(char, x, y, speedX, speedY) {
+        this.char = char;
+        this.x = x;
+        this.y = y;
+        this.speedX = speedX;
+        this.speedY = speedY;
+    }
+
+    update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+    }
+
+    display() {
+        fill(255); // Bianco puro
+        noStroke();
+        textAlign(CENTER, CENTER);
+        text(this.char, this.x, this.y);
+    }
+
+    isOffScreen() {
+        return (this.x < -150 || this.x > width + 150 || this.y < -150 || this.y > height + 150);
+    }
+}
+
+function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+}
+</script>
+
+</body>
+</html>

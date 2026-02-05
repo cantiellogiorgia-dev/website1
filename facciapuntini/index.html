@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Spirale Rosso Fuoco</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0;
+            background: #050505; 
+            overflow: hidden; 
+        }
+        canvas {
+            display: block;
+            cursor: none; 
+        }
+    </style>
+</head>
+<body>
+
+<script>
+let circles = [];
+let angle = 0;
+
+function setup() {
+    createCanvas(windowWidth, windowHeight);
+}
+
+function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+}
+
+function draw() {
+    // Scia con una punta di rosso scuro nello sfondo (15, 5, 5)
+    background(15, 5, 5, 20); 
+
+    // Centro di fallback se il mouse non è ancora entrato
+    let targetX = (mouseX <= 0) ? width / 2 : mouseX;
+    let targetY = (mouseY <= 0) ? height / 2 : mouseY;
+
+    for (let i = 0; i < 2; i++) {
+        let r = angle * 1.5; 
+        
+        // Spirale 1: Grigio/Argento
+        circles.push(new PsyCircle(
+            targetX + cos(angle) * r, 
+            targetY + sin(angle) * r, 
+            angle, 
+            false
+        ));
+        
+        // Spirale 2: ROSSO (Sostituito al Blu)
+        circles.push(new PsyCircle(
+            targetX + cos(angle + PI) * r, 
+            targetY + sin(angle + PI) * r, 
+            angle + PI, 
+            true
+        ));
+        
+        angle += 0.07; 
+    }
+
+    // Attrito per non far espandere la spirale all'infinito se il mouse è fermo
+    if (pmouseX === mouseX && pmouseY === mouseY) {
+        angle = lerp(angle, 0, 0.02);
+    }
+
+    // Disegno e gestione memoria
+    for (let i = circles.length - 1; i >= 0; i--) {
+        circles[i].update();
+        circles[i].display();
+        
+        if (circles[i].isDead()) {
+            circles.splice(i, 1);
+        }
+    }
+}
+
+class PsyCircle {
+    constructor(x, y, a, isRed) {
+        this.x = x;
+        this.y = y;
+        this.size = random(3, 15);
+        this.alpha = 255;
+        this.fadeSpeed = 2.5;
+
+        if (isRed) {
+            // Tonalità Rosso (Bilanciamento dei canali per intensità massima)
+            this.r = map(sin(a), -1, 1, 180, 255); // Rosso predominante
+            this.g = map(sin(a * 0.5), -1, 1, 0, 30);  // Poco verde per evitare l'arancio
+            this.b = map(cos(a), -1, 1, 5, 40);    // Poco blu per toni cremisi
+        } else {
+            // Tonalità Grigio/Argento
+            let gVal = map(sin(a), -1, 1, 100, 200);
+            this.r = gVal;
+            this.g = gVal;
+            this.b = gVal;
+        }
+    }
+
+    update() {
+        this.alpha -= this.fadeSpeed;
+        this.size += 0.1;
+    }
+
+    display() {
+        noStroke();
+        fill(this.r, this.g, this.b, this.alpha);
+        ellipse(this.x, this.y, this.size);
+    }
+
+    isDead() {
+        return this.alpha <= 0;
+    }
+}
+</script>
+
+</body>
+</html>

@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Composizione Tipografica - ELLA</title>
+    <title>Composizione Tipografica Dinamica</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <style>
         body { margin: 0; padding: 0; background: #000; overflow: hidden; }
@@ -14,36 +14,60 @@
 <script>
 let elements = [];
 let timer = 0;
-let step = 0; // 0: LATTE, 1: ELLA, 2: GINOCCHIA
+let step = 0; 
 let wordLatte = "LATTE";
 let wordElla = "ELLA";
 let wordGinocchia = "GINOCCHIA";
 let index = 0;
 
+// Variabili per lo sfondo a pixel
+let gridSize = 10; // Dimensione di ogni "pixel" dello sfondo
+let bgPattern = [];
+let invertColors = false;
+
 function setup() {
     createCanvas(windowWidth, windowHeight);
     textFont('Helvetica, Arial, sans-serif');
     textStyle(BOLD);
-    textSize(45);
+    textSize(50);
+    generateBackground(); // Crea lo schema iniziale
+}
+
+function generateBackground() {
+    bgPattern = [];
+    let cols = ceil(width / gridSize);
+    let rows = ceil(height / gridSize);
+    
+    for (let i = 0; i < cols; i++) {
+        bgPattern[i] = [];
+        for (let j = 0; j < rows; j++) {
+            // Genera un valore randomico tra 1 e 5 per decidere la densità del grigio
+            let r = floor(random(1, 6));
+            bgPattern[i][j] = (r === 1); // 1 possibilità su 5 che sia grigio (o nero se invertito)
+        }
+    }
+}
+
+function mousePressed() {
+    // Inverte i colori e rigenera lo schema ad ogni click
+    invertColors = !invertColors;
+    generateBackground();
 }
 
 function draw() {
-    background(0); // Sfondo nero assoluto
+    drawPixelBackground();
 
-    // Gestione temporizzata della comparsa delle lettere (ogni 300ms)
+    // Gestione comparsa lettere
     if (millis() - timer > 300) {
         if (step === 0) {
-            // LATTE: Dal basso verso l'alto (Verticale UP)
             elements.push(new MovingLetter(wordLatte[index], width * 0.2, height + 50, 0, -3.5));
             index++;
             if (index >= wordLatte.length) { step = 1; index = 0; }
         } else if (step === 1) {
-            // ELLA: Da sinistra verso destra (Orizzontale RIGHT)
-            elements.push(new MovingLetter(wordElla[index], -50, height * 0.5, 4.5, 0));
+            elements.push(new MovingLetter(wordElla[index], -50, height * 0.5, 5, 0));
             index++;
             if (index >= wordElla.length) { step = 2; index = 0; }
         } else if (step === 2) {
-            // GINOCCHIA: Dall'alto verso il basso (Verticale DOWN)
             elements.push(new MovingLetter(wordGinocchia[index], width * 0.8, -50, 0, 3.5));
             index++;
             if (index >= wordGinocchia.length) { step = 0; index = 0; }
@@ -51,14 +75,29 @@ function draw() {
         timer = millis();
     }
 
-    // Aggiornamento e disegno dei caratteri
+    // Aggiornamento e disegno lettere
     for (let i = elements.length - 1; i >= 0; i--) {
         elements[i].update();
         elements[i].display();
-        
-        // Rimuove gli elementi quando escono dal campo visivo
         if (elements[i].isOffScreen()) {
             elements.splice(i, 1);
+        }
+    }
+}
+
+function drawPixelBackground() {
+    noStroke();
+    let cols = bgPattern.length;
+    let rows = bgPattern[0].length;
+
+    for (let i = 0; i < cols; i++) {
+        for (let j = 0; j < rows; j++) {
+            if (bgPattern[i][j]) {
+                fill(invertColors ? 0 : 60); // Grigio scuro o Nero
+            } else {
+                fill(invertColors ? 60 : 0); // Nero o Grigio scuro
+            }
+            rect(i * gridSize, j * gridSize, gridSize, gridSize);
         }
     }
 }
@@ -78,19 +117,23 @@ class MovingLetter {
     }
 
     display() {
-        fill(255); // Bianco puro
-        noStroke();
+        fill(255); // Lettere sempre bianche
+        // Un leggero bagliore nero per staccare dallo sfondo grigio
+        drawingContext.shadowBlur = 10;
+        drawingContext.shadowColor = 'black';
         textAlign(CENTER, CENTER);
         text(this.char, this.x, this.y);
+        drawingContext.shadowBlur = 0;
     }
 
     isOffScreen() {
-        return (this.x < -150 || this.x > width + 150 || this.y < -150 || this.y > height + 150);
+        return (this.x < -100 || this.x > width + 100 || this.y < -100 || this.y > height + 100);
     }
 }
 
 function windowResized() {
     resizeCanvas(windowWidth, windowHeight);
+    generateBackground();
 }
 </script>
 

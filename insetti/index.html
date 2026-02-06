@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Bug Squasher - Wall Edition</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #fff;
+            color: #000;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-weight: bold;
+            overflow: hidden;
+            height: 100vh;
+            cursor: crosshair;
+            user-select: none;
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-align: right;
+            z-index: 100;
+        }
+
+        .skull-mini {
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+
+        #kills { font-size: 24px; }
+
+        .bug {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        .dead-mark {
+            position: absolute;
+            color: #ff0000;
+            font-size: 18px;
+            font-family: monospace;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .wall {
+            position: absolute;
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1;
+            background: #000;
+            color: #fff;
+            padding: 4px;
+            border: 1px solid #000;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <div class="skull-mini">
+     (x_x)
+      -v-
+    </div>
+    <div id="kills">KILLED: 0</div>
+</div>
+
+<script>
+    let killedCount = 0;
+    const obstacles = [];
+    const bugTypes = ['Ж', '«O»', 'vMv', '>>X'];
+
+    // Creazione Muri ASCII
+    const wallSymbol = "#######\n#######\n#######";
+    for (let i = 0; i < 6; i++) {
+        const wall = document.createElement('div');
+        wall.className = 'wall';
+        wall.innerText = wallSymbol;
+        
+        const x = Math.random() * (window.innerWidth - 200) + 100;
+        const y = Math.random() * (window.innerHeight - 200) + 100;
+        
+        document.body.appendChild(wall);
+        
+        obstacles.push({
+            x: x,
+            y: y,
+            w: wall.offsetWidth,
+            h: wall.offsetHeight
+        });
+        
+        wall.style.left = x + 'px';
+        wall.style.top = y + 'px';
+    }
+
+    function createBug() {
+        const el = document.createElement('div');
+        el.className = 'bug';
+        el.innerText = bugTypes[Math.floor(Math.random() * bugTypes.length)];
+        document.body.appendChild(el);
+
+        let x = Math.random() * (window.innerWidth - 50);
+        let y = Math.random() * (window.innerHeight - 50);
+        let angle = Math.random() * Math.PI * 2;
+        let speed = 0.8 + Math.random() * 1.2; // VELOCITÀ RALLENTATA
+        let isDead = false;
+        let hits = 0;
+
+        function move() {
+            if (isDead) return;
+
+            let nextX = x + Math.cos(angle) * speed;
+            let nextY = y + Math.sin(angle) * speed;
+
+            // Collisione Bordi
+            if (nextX < 0 || nextX > window.innerWidth - 30) {
+                angle = Math.PI - angle;
+                nextX = x; // Reset posizione per non incastrarsi
+            }
+            if (nextY < 0 || nextY > window.innerHeight - 30) {
+                angle = -angle;
+                nextY = y;
+            }
+
+            // Collisione Muri (Migliorata)
+            obstacles.forEach(o => {
+                if (nextX < o.x + o.w && nextX + 30 > o.x && 
+                    nextY < o.y + o.h && nextY + 30 > o.y) {
+                    
+                    // Se urta, cambia angolo bruscamente e torna un po' indietro
+                    angle += Math.PI * (0.5 + Math.random()); 
+                    nextX = x - Math.cos(angle) * 5;
+                    nextY = y - Math.sin(angle) * 5;
+                }
+            });
+
+            x = nextX;
+            y = nextY;
+            
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            el.style.transform = `rotate(${angle + Math.PI/2}rad)`;
+
+            requestAnimationFrame(move);
+        }
+
+        el.addEventListener('mousedown', (e) => {
+            if (isDead) return;
+            hits++;
+            
+            if (hits === 1) {
+                el.style.color = "#999";
+                speed *= 0.4; // Rallenta ancora di più se ferito
+            } else if (hits === 2) {
+                isDead = true;
+                killedCount++;
+                document.getElementById('kills').innerText = `KILLED: ${killedCount}`;
+                
+                // Effetto morte ###
+                const mark = document.createElement('div');
+                mark.className = 'dead-mark';
+                mark.innerText = '###';
+                mark.style.left = x + 'px';
+                mark.style.top = y + 'px';
+                mark.style.transform = `rotate(${angle}rad)`;
+                document.body.appendChild(mark);
+                
+                el.remove();
+            }
+        });
+
+        move();
+    }
+
+    // Spawn iniziale (20 insetti)
+    for(let i=0; i<20; i++) {
+        setTimeout(createBug, i * 150);
+    }
+
+    // Mantenimento popolazione
+    setInterval(() => {
+        if(document.querySelectorAll('.bug').length < 25) createBug();
+    }, 2000);
+
+</script>
+</body>
+</html>

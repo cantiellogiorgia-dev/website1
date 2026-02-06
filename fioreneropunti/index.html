@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fiore di Occhi Interattivo</title>
+    <title>Flower of Eyes - Interactive</title>
     <style>
         body {
             margin: 0;
             padding: 0;
-            background-color: white;
+            background-color: #ffffff; /* Sfondo bianco */
             overflow: hidden;
             display: flex;
             justify-content: center;
@@ -27,6 +27,8 @@
 <script>
 const canvas = document.getElementById('canvas1');
 const ctx = canvas.getContext('2d');
+
+// Impostiamo le dimensioni del canvas a tutto schermo
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
@@ -34,7 +36,7 @@ let particleArray = [];
 const mouse = {
     x: null,
     y: null,
-    radius: 50 // Raggio di attivazione dell'occhio
+    radius: 70 // Raggio d'azione del mouse aumentato per un effetto migliore
 }
 
 window.addEventListener('mousemove', function(event) {
@@ -46,39 +48,43 @@ class Eye {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.size = 2; // Dimensione del puntino nero
-        this.isOpen = false;
+        this.size = 2.5; // Dimensione del puntino nero a riposo
     }
 
     draw() {
-        // Calcolo distanza dal mouse
         let dx = mouse.x - this.x;
         let dy = mouse.y - this.y;
         let distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance < mouse.radius) {
-            // DISEGNO OCCHIO APERTO (Semplice One-Line)
+            // --- STATO: OCCHIO APERTO ---
+            
+            // 1. Sfondo nero dell'occhio
             ctx.fillStyle = 'black';
             ctx.beginPath();
-            ctx.arc(this.x, this.y, 6, 0, Math.PI * 2); // Sfondo occhio
+            ctx.arc(this.x, this.y, 7, 0, Math.PI * 2);
             ctx.fill();
 
-            // Linea bianca (palpebra/forma)
+            // 2. Disegno "One Line" della palpebra (Bianca)
             ctx.strokeStyle = 'white';
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 0.8;
             ctx.beginPath();
-            ctx.moveTo(this.x - 5, this.y);
-            ctx.quadraticCurveTo(this.x, this.y - 6, this.x + 5, this.y); // Superiore
-            ctx.quadraticCurveTo(this.x, this.y + 6, this.x - 5, this.y); // Inferiore
+            // Angolo sinistro dell'occhio
+            ctx.moveTo(this.x - 6, this.y); 
+            // Curva superiore
+            ctx.quadraticCurveTo(this.x, this.y - 7, this.x + 6, this.y); 
+            // Curva inferiore
+            ctx.quadraticCurveTo(this.x, this.y + 7, this.x - 6, this.y);
             ctx.stroke();
 
-            // Pupilla bianca
+            // 3. Pupilla bianca al centro
             ctx.fillStyle = 'white';
             ctx.beginPath();
-            ctx.arc(this.x, this.y, 1.5, 0, Math.PI * 2);
+            ctx.arc(this.x, this.y, 1.8, 0, Math.PI * 2);
             ctx.fill();
+            
         } else {
-            // DISEGNO PUNTINO NERO STANDARD
+            // --- STATO: PUNTINO NERO (RIPOSO) ---
             ctx.fillStyle = 'black';
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
@@ -88,30 +94,36 @@ class Eye {
 }
 
 const pngImage = new Image();
-pngImage.src = "imag/fioreneero.png"
-; // Inserisci qui il percorso della tua immagine
+// PERCORSO IMMAGINE: Assicurati che sia corretto!
+pngImage.src = 'img/fioreneero.png'; 
 
 pngImage.onload = function() {
-    // Centra l'immagine sul canvas
+    // Calcoliamo dove disegnare l'immagine per centrarla
     const startX = (canvas.width / 2) - (pngImage.width / 2);
     const startY = (canvas.height / 2) - (pngImage.height / 2);
     
+    // Disegniamo temporaneamente l'immagine per estrarre i dati dei pixel
     ctx.drawImage(pngImage, startX, startY);
-    const data = ctx.getImageData(startX, startY, pngImage.width, pngImage.height);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    try {
+        const data = ctx.getImageData(startX, startY, pngImage.width, pngImage.height);
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Puliamo il canvas per l'animazione
 
-    // Analizza l'immagine (ogni 4 pixel per performance)
-    for (let y = 0; y < data.height; y += 4) {
-        for (let x = 0; x < data.width; x += 4) {
-            // Se il pixel è nero (o molto scuro)
-            if (data.data[(y * 4 * data.width) + (x * 4) + 3] > 128) {
-                let positionX = x + startX;
-                let positionY = y + startY;
-                particleArray.push(new Eye(positionX, positionY));
+        particleArray = [];
+        // Analizziamo i pixel: ogni 4 pixel per mantenere buone performance
+        for (let y = 0; y < data.height; y += 4) {
+            for (let x = 0; x < data.width; x += 4) {
+                // Se l'opacità del pixel è superiore al 50% (pixel non trasparente)
+                if (data.data[(y * 4 * data.width) + (x * 4) + 3] > 128) {
+                    particleArray.push(new Eye(x + startX, y + startY));
+                }
             }
         }
+        console.log("Mappa caricata con successo. Numero di occhi:", particleArray.length);
+        animate();
+    } catch (err) {
+        console.error("Errore di sicurezza (CORS): Apri il file con un server locale!", err);
     }
-    animate();
 };
 
 function animate() {
@@ -122,9 +134,14 @@ function animate() {
     requestAnimationFrame(animate);
 }
 
+// Gestione ridimensionamento finestra
 window.addEventListener('resize', function() {
-    location.reload(); // Ricarica per ricalcolare le posizioni
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    // Nota: in un progetto reale dovresti ricaricare l'immagine qui 
+    // o riposizionare le particelle esistenti.
 });
 </script>
+
 </body>
 </html>

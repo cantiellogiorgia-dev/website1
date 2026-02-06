@@ -4,20 +4,8 @@
     <meta charset="UTF-8">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <style>
-        body { 
-            margin: 0; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            background: #f4f4f4; 
-            overflow: hidden;
-        }
-        canvas { 
-            display: block;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            border: none;
-        }
+        body { margin: 0; padding: 0; background: #f4f4f4; overflow: hidden; }
+        canvas { display: block; }
     </style>
 </head>
 <body>
@@ -25,16 +13,18 @@
 <script>
 let kSnow = [];
 let numK = 40;
+let fullText = "To be, or not to be, that is the question: Whether 'tis nobler in the mind to suffer The slings and arrows of outrageous fortune, Or to take arms against a sea of troubles And by opposing end them. To die—to sleep, No more; and by a sleep to say we end The heart-ache and the thousand natural shocks That flesh is heir to: 'tis a consummation Devoutly to be wish'd. To die, to sleep; To sleep, perchance to dream—ay, there's the rub: For in that sleep of death what dreams may come, When we have shuffled off this mortal coil, Must give us pause—there's the respect That makes calamity of so long life. For who would bear the whips and scorns of time, Th'oppressor's wrong, the proud man's contumely, The pangs of dispriz'd love, the law's delay, The insolence of office, and the spurns That patient merit of th'unworthy takes, When he himself might his quietus make With a bare bodkin? Who would fardels bear, To grunt and sweat under a weary life, But that the dread of something after death, The undiscovere'd country, from whose bourn No traveller returns, puzzles the will, And makes us rather bear those ills we have Than fly to others that we know not of? Thus conscience does make cowards of us all, And thus the native hue of resolution Is sicklied o'er with the pale cast of thought, And enterprises of great pith and moment With this regard their currents turn awry And lose the name of action. Soft you now, The fair Ophelia! Nymph, in thy orisons Be all my sins remember'd.";
 
-// Variabili timer e stati trifoglio
-let lastMouseX = 0, lastMouseY = 0;
-let idleTimer = 0;
-let cloverState = "hidden"; 
-let cloverAlpha = 0;
-let cloverTimer = 0;
+let displayedChars = 0;
+let textTriggered = false;
+let textSpeed = 2.5; 
+
+let boxSize = 400;
+let fontSize = 20; 
+let letterSpacing = 4; // Spaziatura aumentata per chiarezza
 
 function setup() {
-    createCanvas(400, 400);
+    createCanvas(windowWidth, windowHeight);
     textFont('Helvetica');
     textStyle(BOLD);
     for (let i = 0; i < numK; i++) {
@@ -44,103 +34,127 @@ function setup() {
 
 function draw() {
     background(244);
-    noStroke();
+    let centerX = width / 2;
+    let centerY = height / 2;
 
-    // 1. GESTIONE LOGICA TRIFOGLIO
-    let mouseDist = dist(mouseX, mouseY, lastMouseX, lastMouseY);
-    
-    if (cloverState === "hidden") {
-        if (mouseDist < 1) {
-            idleTimer++;
-            if (idleTimer > 240) { // 4 secondi
-                cloverState = "showing";
-                cloverAlpha = 255;
-                cloverTimer = 120; // 2 secondi inseguimento
+    if (!textTriggered) {
+        for (let k of kSnow) {
+            if (dist(mouseX, mouseY, centerX - boxSize/2 + k.x, centerY - boxSize/2 + k.y) < 25) {
+                textTriggered = true;
+                break;
             }
-        } else {
-            idleTimer = 0;
-        }
-    } else if (cloverState === "showing") {
-        cloverTimer--;
-        if (cloverTimer <= 0) cloverState = "fading";
-    } else if (cloverState === "fading") {
-        cloverAlpha -= 5; 
-        if (cloverAlpha <= 0) {
-            cloverAlpha = 0;
-            cloverState = "hidden";
-            idleTimer = 0;
         }
     }
+    if (textTriggered && displayedChars < fullText.length) {
+        displayedChars += textSpeed;
+    }
 
-    lastMouseX = mouseX;
-    lastMouseY = mouseY;
+    drawSpiralText(centerX, centerY);
 
-    // 2. DISEGNO PIOGGIA DI K
+    push();
+    translate(centerX - boxSize/2, centerY - boxSize/2);
     for (let k of kSnow) {
-        let d = dist(mouseX, mouseY, k.x, k.y);
+        let realMouseX = mouseX - (centerX - boxSize/2);
+        let realMouseY = mouseY - (centerY - boxSize/2);
+        let d = dist(realMouseX, realMouseY, k.x, k.y);
         if (d < 70) {
             let force = map(d, 0, 70, 12, 0);
-            if (mouseX > k.x) k.x -= force * 0.5;
+            if (realMouseX > k.x) k.x -= force * 0.5;
             else k.x += force * 0.5;
         }
-
         let kAlpha = map(k.size, 10, 45, 80, 255);
         fill(0, kAlpha);
+        noStroke();
         textSize(k.size);
-        let xOffset = sin(k.drift) * 8;
-        text('K', k.x + xOffset, k.y);
-
+        text('K', k.x + sin(k.drift) * 8, k.y);
         k.y += k.speed;
         k.drift += k.driftSpeed;
-
-        if (k.y > height + 50) {
+        if (k.y > boxSize + 50) {
             Object.assign(k, createK());
             k.y = -50;
         }
     }
-
-    // 3. DISEGNO TRIFOGLIO MODIFICATO
-    if (cloverState !== "hidden") {
-        drawClover(mouseX, mouseY, cloverAlpha);
-    }
+    pop();
 }
 
-function drawClover(x, y, opacity) {
+function drawSpiralText(cx, cy) {
+    if (displayedChars <= 0) return;
+    
+    let currentText = fullText.substring(0, floor(displayedChars));
+    textSize(fontSize);
+    fill(0);
+    textAlign(CENTER, CENTER); // Centrato per evitare sovrapposizioni laterali
+    
+    let curW = boxSize + 60; 
+    let curH = boxSize + 60;
+    let x = -curW / 2;
+    let y = -curH / 2;
+    let side = 0; 
+
     push();
-    translate(x, y);
-    rotate(sin(frameCount * 0.05) * 0.1);
-    
-    fill(0, opacity); 
-    noStroke();
-    
-    // Foglie rimpicciolite e circolari
-    for (let i = 0; i < 3; i++) {
+    translate(cx, cy);
+
+    for (let i = 0; i < currentText.length; i++) {
+        let char = currentText[i];
+        let charW = textWidth(char) + letterSpacing;
+
         push();
-        rotate(radians(i * 120));
-        // Dimensioni ridotte a 7x6 per un effetto più delicato
-        ellipse(0, -4, 7, 6);
+        translate(x, y);
+        if (side === 1) rotate(HALF_PI);
+        if (side === 2) rotate(PI);
+        if (side === 3) rotate(PI + HALF_PI);
+        text(char, 0, 0);
         pop();
+
+        if (side === 0) { // Top
+            x += charW;
+            if (x > curW / 2) { 
+                let over = x - curW / 2;
+                x = curW / 2; 
+                y += over; // Trasferisce l'eccesso al lato successivo
+                side = 1; 
+            }
+        } else if (side === 1) { // Right
+            y += charW;
+            if (y > curH / 2) { 
+                let over = y - curH / 2;
+                y = curH / 2; 
+                x -= over;
+                side = 2; 
+            }
+        } else if (side === 2) { // Bottom
+            x -= charW;
+            if (x < -curW / 2) { 
+                let over = -curW / 2 - x;
+                x = -curW / 2; 
+                y -= over;
+                side = 3; 
+            }
+        } else if (side === 3) { // Left
+            y -= charW;
+            if (y < -curH / 2) { 
+                side = 0;
+                curW += fontSize * 3.5; // Incremento spirale più largo
+                curH += fontSize * 3.5;
+                x = -curW / 2;
+                y = -curH / 2;
+            }
+        }
     }
-    
-    // Gambo allungato e sottile
-    stroke(0, opacity);
-    strokeWeight(0.8); 
-    noFill();
-    // Aumento della lunghezza della curva Bezier (da 10 a 22 pixel)
-    bezier(0, 0, 0, 10, 5, 18, 8, 22);
     pop();
 }
 
 function createK() {
     let size = random(10, 45);
     return {
-        x: random(0, width),
-        y: random(-height, 0),
-        size: size,
-        speed: map(size, 10, 45, 0.5, 1.2),
-        drift: random(0, TWO_PI),
-        driftSpeed: random(0.01, 0.03)
+        x: random(0, boxSize), y: random(-boxSize, 0),
+        size: size, speed: map(size, 10, 45, 0.5, 1.2),
+        drift: random(0, TWO_PI), driftSpeed: random(0.01, 0.03)
     };
+}
+
+function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
 }
 </script>
 
